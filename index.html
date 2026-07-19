@@ -1008,256 +1008,131 @@
   // ================================================================= -->
   // 🔄 RECONNECTED & ROBUST SYNC LOGIC
   // ================================================================= -->
-  async function saveValueToCache(key, value) {
-    let database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
-    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    
-    let isolatedKey = key.startsWith(userPrefix) ? key : userPrefix + key;
-    database[isolatedKey] = value;
-    localStorage.setItem("castor_logger_data", JSON.stringify(database));
-
-    if (LOGGED_IN_USER) {
-      let targetMatric = Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === activeContext.prefix);
-      if (!targetMatric && isSupervisorMode) targetMatric = "supervisor_audit";
-
-      try {
-        const { error } = await _supabase
-          .from('cohort_field_sync')
-          .upsert({ 
-            matric_number: targetMatric, 
-            prefix_id: activeContext.prefix, 
-            full_payload: database,
-            updated_at: new Date().toISOString()
-          });
-
-        if (error) console.error("Cloud Database Write Restriction Encountered:", error.message);
-      } catch (err) {
-        console.error("Supabase Network Connection Fault:", err);
-      }
-    }
-  }
-
-  function loadSavedValuesToDOM() {
-    const database = JSON.parse(localStorage.getItem("castor_logger_data"));
-    let isSupervisorMode = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "supervisor");
-    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    let isJosiah = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "josiah_");
-
-    document.querySelectorAll(".core-logger-input").forEach(element => {
-      const key = element.getAttribute("data-key");
-      let isolatedKey = key.startsWith(userPrefix) ? key : userPrefix + key;
-      
-      if (database && database[isolatedKey] !== undefined) {
-        element.value = database[isolatedKey];
-      } else {
-        element.value = "";
-      }
-
-      if (isSupervisorMode) {
-        if (!element.classList.contains("comment-textarea")) {
-          element.disabled = true;
-          element.style.backgroundColor = "#f4f1e6";
-          element.style.cursor = "not-allowed";
-        } else {
-          element.disabled = false;
-          element.style.backgroundColor = "#fff";
-          element.placeholder = "Type validation remarks here...";
-          element.oninput = function() {
-            saveValueToCache(this.getAttribute("data-key"), this.value);
-          };
-        }
-      } 
-      else if (isJosiah) {
-        if (AUDIT_TARGET_STUDENT && AUDIT_TARGET_STUDENT.prefix !== "josiah_") {
-          element.disabled = true;
-          element.style.backgroundColor = "#f4f1e6";
-          element.style.cursor = "not-allowed";
-        } else {
-          if (element.classList.contains("comment-textarea")) {
-            element.disabled = true;
-            element.style.backgroundColor = "#f4f1e6";
-          } else {
-            element.disabled = false;
-            element.style.backgroundColor = "#fff";
-          }
-        }
-      } 
-      else {
-        if (element.classList.contains("comment-textarea")) {
-          element.disabled = true;
-        } else {
-          element.disabled = false;
-          element.style.backgroundColor = "#fff";
-        }
-      }
-    });
-
-    let currentActivePlots = (activeContext && activeContext.plots) ? activeContext.plots : ["111", "203", "309", "114", "202", "310", "112", "204", "306"];
-    
-    currentActivePlots.forEach(plotId => {
-      for(let w=1; w<=6; w++) {
-        for(let p=1; p<=3; p++) {
-          let prefix = `w${w}_${plotId}_p${p}`;
-          ['imgA', 'imgB'].forEach(slot => {
-            let storageKey = `${userPrefix}${prefix}_${slot}_src`;
-            let container = document.getElementById(`box_${prefix}_${slot}`);
-            if (container) {
-              if (database && database[storageKey]) {
-                container.innerHTML = `<img src="${database[storageKey]}" alt="Snapshot"><div class="view-overlay-indicator">🔍 View</div>`;
-              } else {
-                container.innerHTML = "📷";
-              }
-              container.style.pointerEvents = "auto";
-            }
-          });
-        }
-      }
-    });
-  }
-
-  function handleImageCellClick(storageKeyPrefix) {
-    activePrefixKeyContext = storageKeyPrefix; 
-    const database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
-    let isSupervisorMode = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "supervisor");
-    
-    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    const hasExistingImage = !!database[`${userPrefix}${storageKeyPrefix}_src`];
-    
-    document.getElementById("action-dialog-subtitle").innerText = `Target Slot: ${storageKeyPrefix.toUpperCase().replace(/_/g, " ")}`;
-    
-    const viewButton = document.getElementById("modal-btn-view");
-    if (viewButton) viewButton.disabled = !hasExistingImage;
-
-    let isJosiah = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "josiah_");
-    let isViewingSomeoneElse = (AUDIT_TARGET_STUDENT && AUDIT_TARGET_STUDENT.prefix !== LOGGED_IN_USER.prefix);
-    
-    const actionButtons = document.querySelectorAll(".field-dialog-overlay button:not(#modal-btn-view):not(.cancel)");
-    
-    actionButtons.forEach(btn => {
-      if (isSupervisorMode || (isJosiah && isViewingSomeoneElse)) {
-        btn.disabled = true;
-        btn.style.opacity = "0.4";
-        btn.style.cursor = "not-allowed";
-      } else {
-        btn.disabled = false;
-        btn.style.opacity = "1";
-        btn.style.cursor = "pointer";
-      }
-    });
-
-    document.getElementById("action-dialog-overlay").style.display = "flex";
-  }
-
-  function executeDialogAction(actionRoute) {
-    closeActionDialog();
-    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    
-    if (actionRoute === 'view') {
-      const database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
-      const imgData = database[`${userPrefix}${activePrefixKeyContext}_src`];
-      if (imgData) {
-        displayPhotoOverlay(imgData, `Pathology Profile: ${activePrefixKeyContext.toUpperCase().replace(/_/g, " ")}`);
-      }
-    } else if (actionRoute === 'snap') {
-      document.getElementById(`input_${activePrefixKeyContext}_camera`).click();
-    } else if (actionRoute === 'gallery') {
-      document.getElementById(`input_${activePrefixKeyContext}_gallery`).click();
-    }
-  }
-
-  function closeActionDialog() {
-    document.getElementById("action-dialog-overlay").style.display = "none";
-  }
-
   // ================================================================= -->
-  // 📸 FIXED: RESOLVED COMPRESSION AND UNIQUE TIMESTAMP LINKS
-  // ================================================================= -->
-  async function processIncomingPhoto(storageKeyPrefix, inputElement) {
-    if (!inputElement.files || !inputElement.files[0]) return;
-    
-    const file = inputElement.files[0];
-    const targetBox = document.getElementById(`box_${storageKeyPrefix}`);
-    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    
-    if (targetBox) {
-      targetBox.innerHTML = `<span style="font-size:9px; font-weight:bold; color:var(--blue);">⏳ COMPRESSING...</span>`;
+// 🔄 FIX 1: PERFECT SYNC CODES FOR ALL NUMBERS AND DIGITS
+// ================================================================= -->
+async function saveValueToCache(key, value) {
+  let database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
+  let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
+  let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
+  
+  let isolatedKey = key.startsWith(userPrefix) ? key : userPrefix + key;
+  database[isolatedKey] = value;
+  localStorage.setItem("castor_logger_data", JSON.stringify(database));
+
+  if (LOGGED_IN_USER) {
+    // Robust Matric Extraction: Ensures Josiah's explorer view or standard views map perfectly to the database table row
+    let targetMatric = "";
+    if (LOGGED_IN_USER.prefix === "supervisor") {
+      targetMatric = AUDIT_TARGET_STUDENT ? Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === AUDIT_TARGET_STUDENT.prefix) : "supervisor_audit";
+    } else {
+      targetMatric = Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === LOGGED_IN_USER.prefix);
     }
 
-    const compressImageFile = (sourceFile) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(sourceFile);
-        reader.onload = (event) => {
-          const img = new Image();
-          img.src = event.target.result;
-          img.onload = () => {
-            const canvas = document.createElement("canvas");
-            let width = img.width;
-            let height = img.height;
-            const max_size = 1000;
-            if (width > height && width > max_size) {
-              height *= max_size / width;
-              width = max_size;
-            } else if (height > max_size) {
-              width *= max_size / height;
-              height = max_size;
-            }
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0, width, height);
-
-            canvas.toBlob((blob) => {
-              resolve(blob);
-            }, "image/jpeg", 0.7);
-          };
-        };
-      });
-    };
-
-    const optimizedBlob = await compressImageFile(file);
-
-    if (targetBox) {
-      targetBox.innerHTML = `<span style="font-size:9px; font-weight:bold; color:var(--green);">📡 CLOUD UPLOADING...</span>`;
-    }
+    if (!targetMatric) return;
 
     try {
-      // FIX: Add a unique timestamp to prevent caching overwrites breaking the view layers
-      const uniqueFileName = `${userPrefix}${storageKeyPrefix}_${Date.now()}.jpg`;
-      
-      const { data, error } = await _supabase.storage
-        .from('castor_photos')
-        .upload(uniqueFileName, optimizedBlob, {
-          contentType: 'image/jpeg',
-          upsert: true
+      const { error } = await _supabase
+        .from('cohort_field_sync')
+        .upsert({ 
+          matric_number: targetMatric, 
+          prefix_id: userPrefix, 
+          full_payload: database,
+          updated_at: new Date().toISOString()
         });
 
-      if (error) throw error;
-
-      const { data: publicUrlData } = _supabase.storage
-        .from('castor_photos')
-        .getPublicUrl(uniqueFileName);
-
-      const permanentCloudUrl = publicUrlData.publicUrl;
-
-      if (targetBox) {
-        targetBox.innerHTML = `<img src="${permanentCloudUrl}" alt="Evidence"><div class="view-overlay-indicator">🔍 View</div>`;
-      }
-
-      // Update both localized layout state cache and cloud state tables
-      await saveValueToCache(`${storageKeyPrefix}_src`, permanentCloudUrl);
-      
+      if (error) console.error("Database cloud write error:", error.message);
     } catch (err) {
-      console.error("Cloud Photo Bucket Stream Failure:", err);
-      alert("Failed to securely store image online. Please check network connections and bucket access permissions.");
-      if (targetBox) targetBox.innerHTML = "📷";
+      console.error("Network sync link broke down:", err);
     }
   }
+}
+
+// ================================================================= -->
+// 📸 FIX 2: FORCE SUPABASE STORAGE BUCKET OVERWRITE (NO DUPLICATES)
+// ================================================================= -->
+async function processIncomingPhoto(storageKeyPrefix, inputElement) {
+  if (!inputElement.files || !inputElement.files[0]) return;
+  
+  const file = inputElement.files[0];
+  const targetBox = document.getElementById(`box_${storageKeyPrefix}`);
+  let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
+  let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
+  
+  if (targetBox) {
+    targetBox.innerHTML = `<span style="font-size:9px; font-weight:bold; color:var(--blue);">⏳ COMPRESSING...</span>`;
+  }
+
+  const compressImageFile = (sourceFile) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(sourceFile);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          const max_size = 1000;
+          if (width > height && width > max_size) {
+            height *= max_size / width;
+            width = max_size;
+          } else if (height > max_size) {
+            width *= max_size / height;
+            height = max_size;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            resolve(blob);
+          }, "image/jpeg", 0.7);
+        };
+      };
+    });
+  };
+
+  const optimizedBlob = await compressImageFile(file);
+
+  if (targetBox) {
+    targetBox.innerHTML = `<span style="font-size:9px; font-weight:bold; color:var(--green);">📡 CLOUD OVERWRITING...</span>`;
+  }
+
+  try {
+    // FIX: Removed the timestamp completely. Now uses the exact same slot name every time to overwrite the asset in Supabase.
+    const uniqueFileName = `${userPrefix}${storageKeyPrefix}.jpg`;
+    
+    const { data, error } = await _supabase.storage
+      .from('castor_photos')
+      .upload(uniqueFileName, optimizedBlob, {
+        contentType: 'image/jpeg',
+        upsert: true // Enforces a direct overwrite inside the bucket storage file system
+      });
+
+    if (error) throw error;
+
+    const { data: publicUrlData } = _supabase.storage
+      .from('castor_photos')
+      .getPublicUrl(uniqueFileName);
+
+    // Cache breaker added to the URL string so the browser knows to immediately render the new image instead of using cached data
+    const permanentCloudUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+
+    if (targetBox) {
+      targetBox.innerHTML = `<img src="${permanentCloudUrl}" alt="Evidence"><div class="view-overlay-indicator">🔍 View</div>`;
+    }
+
+    await saveValueToCache(`${storageKeyPrefix}_src`, permanentCloudUrl);
+    
+  } catch (err) {
+    console.error("Cloud Photo Bucket Stream Failure:", err);
+    alert("Failed to securely store image online.");
+    if (targetBox) targetBox.innerHTML = "📷";
+  }
+}
 
   function displayPhotoOverlay(imageURL, captionText) {
     document.getElementById('lightbox-target-image').src = imageURL;
