@@ -260,12 +260,19 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // ================================================================= -->
-  // 🔌 CLOUD SETUP REMOVED - RUNNING PURELY ON LOCALSTORAGE RESET
+  // 🔌 FRESH SUPABASE CLOUD LINKING INFRASTRUCTURE
   // ================================================================= -->
+  const SUPABASE_URL = "https://whbgnrqhrsqopxhorlkn.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_2Tcu846tbkOcyB3yYcVWcA_WkBzbnxy";
+  
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
   let activePrefixKeyContext = "";
   let AUDIT_TARGET_STUDENT = null;
+  let LOGGED_IN_USER = null;
 
   const COHORT_REGISTRY = {
     "20224193": { 
@@ -606,8 +613,6 @@
     }
   };
 
-  let LOGGED_IN_USER = null;
-
   function initializeMatrixDatabase() {
     let localDatabase = localStorage.getItem("castor_logger_data");
     if (!localDatabase) {
@@ -632,7 +637,6 @@
   function renderCohortSidebarDirectory() {
     const listMount = document.getElementById("sidebar-cohort-list-mount");
     if (!listMount) return;
-    
     listMount.innerHTML = "";
     
     let isSupervisorMode = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "supervisor");
@@ -640,7 +644,6 @@
 
     Object.keys(COHORT_REGISTRY).forEach(matricId => {
       const studentData = COHORT_REGISTRY[matricId];
-      
       const listItem = document.createElement("li");
       listItem.className = "student-item";
       
@@ -729,38 +732,7 @@
     document.body.appendChild(overlay);
   }
 
-  function openPasswordCustomizationPanel(matricId) {
-    const s = COHORT_REGISTRY[matricId];
-    if (!s) return;
-    
-    if (LOGGED_IN_USER.prefix !== "supervisor" && LOGGED_IN_USER.prefix !== s.prefix) {
-      alert("Access Denied: You are not authorized to update credentials logs parameters for this candidate slot.");
-      return;
-    }
-
-    const currentVerify = prompt("Verification Step:\nPlease input the CURRENT active access security authorization password:");
-    if (currentVerify !== s.pass) {
-      alert("⚠️ Verification Error: Input password does not match registry database records index code.");
-      return;
-    }
-
-    const newPass1 = prompt("Success Verified.\nPlease input your NEW security authorization password:");
-    if (!newPass1 || newPass1.trim().length < 4) {
-      alert("⚠️ Security Protocol Fault: Password field entries must contain at least 4 text characters.");
-      return;
-    }
-
-    const newPass2 = prompt("Please confirm your NEW password once again:");
-    if (newPass1 !== newPass2) {
-      alert("⚠️ Data Entry Fault: Confirmation matching check failed. Operation aborted.");
-      return;
-    }
-
-    s.pass = newPass1.trim();
-    alert(`🔑 Password updated locally in device memory!`);
-  }
-
-  function executeHubAuthentication() {
+  async function executeHubAuthentication() {
     const userInput = document.getElementById('access-username').value.trim();
     const passInput = document.getElementById('access-password').value.trim();
     const errorLabel = document.getElementById('access-error-lbl');
@@ -784,6 +756,22 @@
         
         document.getElementById('dynamic-user-name-display').innerText = `${LOGGED_IN_USER.name} (Matric: ${userInput})`;
         
+        // 🔄 PULL FRESH CLOUD DATA TO BROWSER ON LOGIN IF BACKUP EXISTS
+        try {
+          const { data: cloudBackup, error: pullError } = await _supabase
+            .from('cohort_field_sync')
+            .select('full_payload')
+            .eq('matric_number', userInput)
+            .maybeSingle();
+
+          if (!pullError && cloudBackup && cloudBackup.full_payload) {
+            localStorage.setItem("castor_logger_data", JSON.stringify(cloudBackup.full_payload));
+            console.log("Database data retrieved and synced into localized states successfully.");
+          }
+        } catch(err) {
+          console.warn("Could not load cloud state, using offline cache:", err);
+        }
+
         if (userInput === "20224193") {
           alert("Welcome Admin Explorer Mode: O.E. Josiah. You can now tap student rows to view their details or records.");
           renderCohortSidebarDirectory(); 
@@ -802,7 +790,6 @@
         return;
       }
     }
-
     errorLabel.style.display = 'block';
   }
 
@@ -1017,18 +1004,36 @@
   }
 
   // ================================================================= -->
-  // ⚡ UPDATED: PURE LOCALSTORAGE REPOSITORY (NO EXTERNAL SYNC CALLS)
+  // 🔄 RECONNECTED & ROBUST SYNC LOGIC
   // ================================================================= -->
-  function saveValueToCache(key, value) {
+  async function saveValueToCache(key, value) {
     let database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
     let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
     let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
     
     let isolatedKey = key.startsWith(userPrefix) ? key : userPrefix + key;
-    
     database[isolatedKey] = value;
     localStorage.setItem("castor_logger_data", JSON.stringify(database));
-    console.log(`Saved locally: ${isolatedKey}`);
+
+    if (LOGGED_IN_USER) {
+      let targetMatric = Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === activeContext.prefix);
+      if (!targetMatric && isSupervisorMode) targetMatric = "supervisor_audit";
+
+      try {
+        const { error } = await _supabase
+          .from('cohort_field_sync')
+          .upsert({ 
+            matric_number: targetMatric, 
+            prefix_id: activeContext.prefix, 
+            full_payload: database,
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) console.error("Cloud Database Write Restriction Encountered:", error.message);
+      } catch (err) {
+        console.error("Supabase Network Connection Fault:", err);
+      }
+    }
   }
 
   function loadSavedValuesToDOM() {
@@ -1166,6 +1171,9 @@
     document.getElementById("action-dialog-overlay").style.display = "none";
   }
 
+  // ================================================================= -->
+  // 📸 FIXED: RESOLVED COMPRESSION AND UNIQUE TIMESTAMP LINKS
+  // ================================================================= -->
   async function processIncomingPhoto(storageKeyPrefix, inputElement) {
     if (!inputElement.files || !inputElement.files[0]) return;
     
@@ -1175,24 +1183,78 @@
     let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
     
     if (targetBox) {
-      targetBox.innerHTML = `<span style="font-size:9px; font-weight:bold; color:var(--blue);">⏳ LOCAL PROCESSING...</span>`;
+      targetBox.innerHTML = `<span style="font-size:9px; font-weight:bold; color:var(--blue);">⏳ COMPRESSING...</span>`;
     }
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = function(event) {
-      const permanentCloudUrl = event.target.result; // Fallback directly to base64 string for offline storage preview
+    const compressImageFile = (sourceFile) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(sourceFile);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            let width = img.width;
+            let height = img.height;
+            const max_size = 1000;
+            if (width > height && width > max_size) {
+              height *= max_size / width;
+              width = max_size;
+            } else if (height > max_size) {
+              width *= max_size / height;
+              height = max_size;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob((blob) => {
+              resolve(blob);
+            }, "image/jpeg", 0.7);
+          };
+        };
+      });
+    };
+
+    const optimizedBlob = await compressImageFile(file);
+
+    if (targetBox) {
+      targetBox.innerHTML = `<span style="font-size:9px; font-weight:bold; color:var(--green);">📡 CLOUD UPLOADING...</span>`;
+    }
+
+    try {
+      // FIX: Add a unique timestamp to prevent caching overwrites breaking the view layers
+      const uniqueFileName = `${userPrefix}${storageKeyPrefix}_${Date.now()}.jpg`;
       
+      const { data, error } = await _supabase.storage
+        .from('castor_photos')
+        .upload(uniqueFileName, optimizedBlob, {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
+
+      if (error) throw error;
+
+      const { data: publicUrlData } = _supabase.storage
+        .from('castor_photos')
+        .getPublicUrl(uniqueFileName);
+
+      const permanentCloudUrl = publicUrlData.publicUrl;
+
       if (targetBox) {
         targetBox.innerHTML = `<img src="${permanentCloudUrl}" alt="Evidence"><div class="view-overlay-indicator">🔍 View</div>`;
       }
 
-      let database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
-      let isolatedKey = userPrefix + storageKeyPrefix + "_src";
+      // Update both localized layout state cache and cloud state tables
+      await saveValueToCache(`${storageKeyPrefix}_src`, permanentCloudUrl);
       
-      database[isolatedKey] = permanentCloudUrl;
-      localStorage.setItem("castor_logger_data", JSON.stringify(database));
-    };
+    } catch (err) {
+      console.error("Cloud Photo Bucket Stream Failure:", err);
+      alert("Failed to securely store image online. Please check network connections and bucket access permissions.");
+      if (targetBox) targetBox.innerHTML = "📷";
+    }
   }
 
   function displayPhotoOverlay(imageURL, captionText) {
