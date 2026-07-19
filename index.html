@@ -733,65 +733,67 @@
   }
 
   async function executeHubAuthentication() {
-    const userInput = document.getElementById('access-username').value.trim();
-    const passInput = document.getElementById('access-password').value.trim();
-    const errorLabel = document.getElementById('access-error-lbl');
-    
-    errorLabel.style.display = 'none';
+  const userInput = document.getElementById('access-username').value.trim();
+  const passInput = document.getElementById('access-password').value.trim();
+  const errorLabel = document.getElementById('access-error-lbl');
+  
+  errorLabel.style.display = 'none';
 
-    if (userInput === "enikuomehin@funaab.edu.ng" && passInput === "MASTER_PATHOLOGY_2026") {
-      LOGGED_IN_USER = { name: "Prof. O. A. Enikuomehin", prefix: "supervisor" };
+  if (userInput === "enikuomehin@funaab.edu.ng" && passInput === "MASTER_PATHOLOGY_2026") {
+    LOGGED_IN_USER = { name: "Prof. O. A. Enikuomehin", prefix: "supervisor" };
+    AUDIT_TARGET_STUDENT = null; 
+    renderCohortSidebarDirectory(); 
+    document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
+    return;
+  }
+
+  if (COHORT_REGISTRY[userInput]) {
+    let targetPassword = COHORT_REGISTRY[userInput].pass;
+
+    if (passInput === targetPassword) {
+      LOGGED_IN_USER = COHORT_REGISTRY[userInput];
       AUDIT_TARGET_STUDENT = null; 
-      renderCohortSidebarDirectory(); 
-      document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
+      
+      document.getElementById('dynamic-user-name-display').innerText = `${LOGGED_IN_USER.name} (Matric: ${userInput})`;
+      
+      // 🔄 1. PULL FRESH CLOUD DATA TO BROWSER ON LOGIN
+      try {
+        const { data: cloudBackup, error: pullError } = await _supabase
+          .from('cohort_field_sync')
+          .select('full_payload')
+          .eq('matric_number', userInput)
+          .maybeSingle();
+
+        if (!pullError && cloudBackup && cloudBackup.full_payload) {
+          localStorage.setItem("castor_logger_data", JSON.stringify(cloudBackup.full_payload));
+          console.log("Database data retrieved and synced into localized states successfully.");
+        }
+      } catch(err) {
+        console.warn("Could not load cloud state, using offline cache:", err);
+      }
+
+      // 🔄 2. THE COMPLETE FIX: Force a total UI rebuild with the fresh cloud data
+      if (userInput === "20224193") {
+        alert("Welcome Admin Explorer Mode: O.E. Josiah. You can now tap student rows to view their details or records.");
+        renderCohortSidebarDirectory(); 
+        document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
+      } else {
+        const backArrow = document.getElementById("back-navigation-arrow-id");
+        if (backArrow) backArrow.style.display = "none";
+        
+        // Build the specific student's tables, bind events, and drop all text/image inputs into place instantly
+        renderAllWeeksHTML();
+        bindInputListeners();
+        loadSavedValuesToDOM();
+        
+        document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
+        openJosiahPortal(); 
+      }
       return;
     }
-
-    if (COHORT_REGISTRY[userInput]) {
-      let targetPassword = COHORT_REGISTRY[userInput].pass;
-
-      if (passInput === targetPassword) {
-        LOGGED_IN_USER = COHORT_REGISTRY[userInput];
-        AUDIT_TARGET_STUDENT = null; 
-        
-        document.getElementById('dynamic-user-name-display').innerText = `${LOGGED_IN_USER.name} (Matric: ${userInput})`;
-        
-        // 🔄 PULL FRESH CLOUD DATA TO BROWSER ON LOGIN IF BACKUP EXISTS
-        try {
-          const { data: cloudBackup, error: pullError } = await _supabase
-            .from('cohort_field_sync')
-            .select('full_payload')
-            .eq('matric_number', userInput)
-            .maybeSingle();
-
-          if (!pullError && cloudBackup && cloudBackup.full_payload) {
-            localStorage.setItem("castor_logger_data", JSON.stringify(cloudBackup.full_payload));
-            console.log("Database data retrieved and synced into localized states successfully.");
-          }
-        } catch(err) {
-          console.warn("Could not load cloud state, using offline cache:", err);
-        }
-
-        if (userInput === "20224193") {
-          alert("Welcome Admin Explorer Mode: O.E. Josiah. You can now tap student rows to view their details or records.");
-          renderCohortSidebarDirectory(); 
-          document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
-        } else {
-          const backArrow = document.getElementById("back-navigation-arrow-id");
-          if (backArrow) backArrow.style.display = "none";
-          
-          renderAllWeeksHTML();
-          bindInputListeners();
-          loadSavedValuesToDOM();
-          
-          document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
-          openJosiahPortal(); 
-        }
-        return;
-      }
-    }
-    errorLabel.style.display = 'block';
   }
+  errorLabel.style.display = 'block';
+}
 
   function terminatePortalSession() {
     LOGGED_IN_USER = null;
