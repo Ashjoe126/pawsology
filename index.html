@@ -1122,8 +1122,13 @@ async function openPasswordCustomizationPanel(matricId) {
 
   function bindInputListeners() {
     document.querySelectorAll(".core-logger-input").forEach(element => {
+      // Clean up old listener attachments to prevent memory stacking
+      element.replaceWith(element.cloneNode(true));
+    });
+
+    document.querySelectorAll(".core-logger-input").forEach(element => {
       element.addEventListener("input", async function() {
-        // Enforcing await here ensures the input thread remains active for the network request
+        // Awaiting the function links the network sequence correctly to browser event loops
         await saveValueToCache(this.getAttribute("data-key"), this.value);
       });
     });
@@ -1142,27 +1147,32 @@ async function openPasswordCustomizationPanel(matricId) {
     // 🔒 BACK UP DIGITS TO THE CLOUD INSTANTLY ON TYPING
     if (LOGGED_IN_USER) {
       try {
-        let userMatric = document.getElementById('access-username').value.trim();
+        let usernameEl = document.getElementById('access-username');
+        let userMatric = usernameEl ? usernameEl.value.trim() : "";
         
-        // Safety step: If you are inspecting someone else's workbook, fallback to the targeted student's matric number 
+        // Safeguard fallback: if viewing in supervisor/explorer mode and input is blank, assign context matric
         if (!userMatric && AUDIT_TARGET_STUDENT) {
           userMatric = Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === userPrefix) || "audit_view";
         }
 
-        const { error } = await _supabase.from('cohort_field_sync').upsert({ 
-          prefix_id: userPrefix, 
-          matric_number: userMatric || "system_log", 
-          full_payload: database,
-          updated_at: new Date().toISOString()
-        });
+        // Fixed: Explicitly passing matching constraints forces Supabase to overwrite the existing payload cleanly
+        const { error } = await _supabase.from('cohort_field_sync').upsert(
+          { 
+            prefix_id: userPrefix, 
+            matric_number: userMatric || "system_log", 
+            full_payload: database,
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'prefix_id' }
+        );
 
         if (error) {
-          console.error("Supabase dynamic reject:", error.message);
+          console.error("❌ Supabase Rejected: ", error.message);
         } else {
-          console.log("Cloud backup successful for:", userPrefix);
+          console.log("✅ Cloud Sync Success: ", userPrefix);
         }
-      } catch (err) {
-        console.error("Network upload link failed:", err);
+      } catch (cloudErr) {
+        console.error("🚨 Network Pipeline Broken: ", cloudErr);
       }
     }
   }
