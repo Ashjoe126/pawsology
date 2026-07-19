@@ -1122,8 +1122,9 @@ async function openPasswordCustomizationPanel(matricId) {
 
   function bindInputListeners() {
     document.querySelectorAll(".core-logger-input").forEach(element => {
-      element.addEventListener("input", function() {
-        saveValueToCache(this.getAttribute("data-key"), this.value);
+      element.addEventListener("input", async function() {
+        // Enforcing await here ensures the input thread remains active for the network request
+        await saveValueToCache(this.getAttribute("data-key"), this.value);
       });
     });
   }
@@ -1140,159 +1141,30 @@ async function openPasswordCustomizationPanel(matricId) {
 
     // 🔒 BACK UP DIGITS TO THE CLOUD INSTANTLY ON TYPING
     if (LOGGED_IN_USER) {
-      let userMatric = document.getElementById('access-username').value.trim();
-      await _supabase.from('cohort_field_sync').upsert({ 
-        prefix_id: userPrefix, 
-        matric_number: userMatric, 
-        full_payload: database,
-        updated_at: new Date().toISOString()
-      });
+      try {
+        let userMatric = document.getElementById('access-username').value.trim();
+        
+        // Safety step: If you are inspecting someone else's workbook, fallback to the targeted student's matric number 
+        if (!userMatric && AUDIT_TARGET_STUDENT) {
+          userMatric = Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === userPrefix) || "audit_view";
+        }
+
+        const { error } = await _supabase.from('cohort_field_sync').upsert({ 
+          prefix_id: userPrefix, 
+          matric_number: userMatric || "system_log", 
+          full_payload: database,
+          updated_at: new Date().toISOString()
+        });
+
+        if (error) {
+          console.error("Supabase dynamic reject:", error.message);
+        } else {
+          console.log("Cloud backup successful for:", userPrefix);
+        }
+      } catch (err) {
+        console.error("Network upload link failed:", err);
+      }
     }
-  }
-
-  // LOCKDOWN VIEW-ONLY LAYER ENFORCED CLEANLY FOR THE SUPERVISOR
-  function loadSavedValuesToDOM() {
-    const database = JSON.parse(localStorage.getItem("castor_logger_data"));
-    let isSupervisorMode = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "supervisor");
-    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    
-    // 👑 JOSIAH ACCESS DETECTOR
-    let isJosiah = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "josiah_");
-
-    document.querySelectorAll(".core-logger-input").forEach(element => {
-      const key = element.getAttribute("data-key");
-      let isolatedKey = key.startsWith(userPrefix) ? key : userPrefix + key;
-      
-      if (database && database[isolatedKey] !== undefined) {
-        element.value = database[isolatedKey];
-      } else {
-        element.value = "";
-      }
-
-      // --- 🔒 ACCESS ROUTING HARD FREEZE MATRIX ENGINE ---
-      
-      // Case A: Supervisor Operations
-      if (isSupervisorMode) {
-        if (!element.classList.contains("comment-textarea")) {
-          element.disabled = true;
-          element.style.backgroundColor = "#f4f1e6";
-          element.style.cursor = "not-allowed";
-        } else {
-          element.disabled = false;
-          element.style.backgroundColor = "#fff";
-          element.placeholder = "Type your official review data modifications verification and validation remarks here...";
-          
-          element.oninput = async function() {
-            saveValueToCache(this.getAttribute("data-key"), this.value);
-            let updatedDb = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
-            await _supabase.from('cohort_field_sync').upsert({
-              prefix_id: userPrefix,
-              matric_number: AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT.prefix : "supervisor_review",
-              full_payload: updatedDb,
-              updated_at: new Date().toISOString()
-            });
-          };
-        }
-      } 
-      // Case B: Josiah Administrative Explorer Operations
-      else if (isJosiah) {
-        // If Josiah is viewing another student's page, freeze EVERYTHING (including comments)
-        if (AUDIT_TARGET_STUDENT && AUDIT_TARGET_STUDENT.prefix !== "josiah_") {
-          element.disabled = true;
-          element.style.backgroundColor = "#f4f1e6";
-          element.style.cursor = "not-allowed";
-          if (element.classList.contains("comment-textarea")) {
-            element.placeholder = "Read-Only Explorer View: Awaiting official evaluation remarks from Prof. Enikuomehin.";
-          }
-        } else {
-          // If Josiah is looking at his OWN workbook, keep it fully unlocked and editable!
-          if (element.classList.contains("comment-textarea")) {
-            element.disabled = true;
-            element.style.backgroundColor = "#f4f1e6";
-            element.style.cursor = "not-allowed";
-            element.placeholder = "Awaiting official evaluation remarks from Prof. Enikuomehin.";
-          } else {
-            element.disabled = false;
-            element.style.backgroundColor = "#fff";
-          }
-        }
-      } 
-      // Case C: Standard Student Operations
-      else {
-        if (element.classList.contains("comment-textarea")) {
-          element.disabled = true;
-          element.placeholder = "Awaiting official verification and validation evaluation remarks from Prof. Enikuomehin.";
-        } else {
-          element.disabled = false;
-          element.style.backgroundColor = "#fff";
-        }
-      }
-    });
-
-    // 🖼️ KEEP ORIGINAL PICTURE THUMBNAILS EXTRACTED PERFECTLY
-    let currentActivePlots = (activeContext && activeContext.plots) ? activeContext.plots : ["111", "203", "309", "114", "202", "310", "112", "204", "306"];
-    
-    currentActivePlots.forEach(plotId => {
-      for(let w=1; w<=6; w++) {
-        for(let p=1; p<=3; p++) {
-          let prefix = `w${w}_${plotId}_p${p}`;
-          ['imgA', 'imgB'].forEach(slot => {
-            let storageKey = `${userPrefix}${prefix}_${slot}_src`;
-            let container = document.getElementById(`box_${prefix}_${slot}`);
-            if (container) {
-              if (database && database[storageKey]) {
-                container.innerHTML = `<img src="${database[storageKey]}" alt="Snapshot"><div class="view-overlay-indicator">🔍 View</div>`;
-              } else {
-                container.innerHTML = "📷";
-              }
-              container.style.pointerEvents = "auto";
-            }
-          });
-        }
-      }
-    });
-  }
-
-  function handleImageCellClick(storageKeyPrefix) {
-    activePrefixKeyContext = storageKeyPrefix; 
-    const database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
-    let isSupervisorMode = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "supervisor");
-    
-    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    const hasExistingImage = !!database[`${userPrefix}${storageKeyPrefix}_src`];
-    
-    const readableMetaLabel = storageKeyPrefix.toUpperCase().replace(/_/g, " ");
-    document.getElementById("action-dialog-subtitle").innerText = `Target Slot: ${readableMetaLabel}`;
-    
-    const viewButton = document.getElementById("modal-btn-view");
-    if (viewButton) {
-      viewButton.disabled = !hasExistingImage;
-    }
-
-    // 🔒 JOSIAH MASTER EXPLORER HARD LOCK FOR IMAGES
-    // If Josiah is logged in but inspecting another student's plot sheet, block the upload buttons completely!
-    let isJosiah = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "josiah_");
-    let isViewingSomeoneElse = (AUDIT_TARGET_STUDENT && AUDIT_TARGET_STUDENT.prefix !== LOGGED_IN_USER.prefix);
-    
-    const actionButtons = document.querySelectorAll(".field-dialog-overlay button:not(#modal-btn-view):not(.cancel)");
-    
-    actionButtons.forEach(btn => {
-      if (isSupervisorMode || (isJosiah && isViewingSomeoneElse)) {
-        // Freeze snap and gallery actions explicitly
-        btn.disabled = true;
-        btn.style.opacity = "0.4";
-        btn.style.cursor = "not-allowed";
-      } else {
-        // Open safely for standard students on their own sheets
-        btn.disabled = false;
-        btn.style.opacity = "1";
-        btn.style.cursor = "pointer";
-      }
-    });
-
-    document.getElementById("action-dialog-overlay").style.display = "flex";
   }
 
   function executeDialogAction(actionRoute) {
