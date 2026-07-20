@@ -538,37 +538,48 @@
   // ⚡ AUTOMATED OVERWRITE DATA STREAMING LOOP
   // ================================================================= -->
   async function saveValueToCache(key, value) {
-    let database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
-    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    
-    let isolatedKey = key.startsWith(userPrefix) ? key : userPrefix + key;
-    database[isolatedKey] = value;
-    localStorage.setItem("castor_logger_data", JSON.stringify(database));
+  let database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
+  let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
+  let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
+  
+  let isolatedKey = key.startsWith(userPrefix) ? key : userPrefix + key;
+  database[isolatedKey] = value;
+  localStorage.setItem("castor_logger_data", JSON.stringify(database));
 
-    if (LOGGED_IN_USER) {
-      let targetMatric = Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === activeContext.prefix);
-      if (!targetMatric && LOGGED_IN_USER.prefix === "supervisor") {
-        targetMatric = AUDIT_TARGET_STUDENT ? Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === AUDIT_TARGET_STUDENT.prefix) : "supervisor_audit";
+  if (LOGGED_IN_USER) {
+    let targetMatric = Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === activeContext.prefix);
+    if (!targetMatric && LOGGED_IN_USER.prefix === "supervisor") {
+      targetMatric = AUDIT_TARGET_STUDENT ? Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === AUDIT_TARGET_STUDENT.prefix) : "supervisor_audit";
+    }
+
+    if (!targetMatric) {
+      console.warn("Sync blocked: Matric number could not be resolved.");
+      return;
+    }
+
+    try {
+      // Execute upload stream and catch the response directly
+      const { data, error } = await _supabase
+        .from('cohort_field_sync')
+        .upsert({ 
+          matric_number: targetMatric, 
+          prefix_id: activeContext.prefix, 
+          full_payload: database,
+          updated_at: new Date().toISOString()
+        });
+
+      // 🔴 DIAGNOSTIC CHECKPOINT: If Supabase rejects the write, flag the error message instantly
+      if (error) {
+        console.error("Supabase Sync Failure:", error);
+        alert(`Supabase Error: ${error.message} \nCode: ${error.code}\nDetails: ${error.details}`);
+      } else {
+        console.log("Cloud sync locked successfully for row:", targetMatric);
       }
-
-      if (!targetMatric) return;
-
-      try {
-        // Upsert targets the unique matric primary key row and overwrites data maps directly without duplicates
-        await _supabase
-          .from('cohort_field_sync')
-          .upsert({ 
-            matric_number: targetMatric, 
-            prefix_id: activeContext.prefix, 
-            full_payload: database,
-            updated_at: new Date().toISOString()
-          });
-      } catch (err) {
-        console.error("Transmission error syncing data states to core servers:", err);
-      }
+    } catch (err) {
+      console.error("Transmission error syncing data states to core servers:", err);
     }
   }
+}
 
   // ================================================================= -->
   // 📸 AUTOMATED FILE REPLACEMENT & STABLE BUCKET STORAGE STREAM
