@@ -478,51 +478,57 @@
   }
 
   async function executeHubAuthentication() {
-    const userInput = document.getElementById('access-username').value.trim();
-    const passInput = document.getElementById('access-password').value.trim();
-    const errorLabel = document.getElementById('access-error-lbl');
-    errorLabel.style.display = 'none';
+  const userInput = document.getElementById('access-username').value.trim();
+  const passInput = document.getElementById('access-password').value.trim();
+  const errorLabel = document.getElementById('access-error-lbl');
+  errorLabel.style.display = 'none';
 
-    if (userInput === "enikuomehin@funaab.edu.ng" && passInput === "MASTER_PATHOLOGY_2026") {
-      LOGGED_IN_USER = { name: "Prof. O. A. Enikuomehin", prefix: "supervisor" };
+  if (userInput === "enikuomehin@funaab.edu.ng" && passInput === "MASTER_PATHOLOGY_2026") {
+    LOGGED_IN_USER = { name: "Prof. O. A. Enikuomehin", prefix: "supervisor" };
+    AUDIT_TARGET_STUDENT = null; 
+    renderCohortSidebarDirectory(); 
+    document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
+    return;
+  }
+
+  if (COHORT_REGISTRY[userInput]) {
+    let targetPassword = COHORT_REGISTRY[userInput].pass;
+
+    if (passInput === targetPassword) {
+      LOGGED_IN_USER = COHORT_REGISTRY[userInput];
       AUDIT_TARGET_STUDENT = null; 
-      renderCohortSidebarDirectory(); 
-      document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
+      
+      document.getElementById('dynamic-user-name-display').innerText = `${LOGGED_IN_USER.name} (Matric: ${userInput})`;
+      
+      // 🔄 FIX: Wrap cloud pulling in a safe wrapper so a blank table won't lock you out of the form!
+      try {
+        await pullCloudRecordsToLocalCache(userInput);
+      } catch (gateErr) {
+        console.warn("Initial cloud load skipped (table may be empty):", gateErr);
+        // Fallback to defaults so the form doesn't stay broken
+        localStorage.setItem("castor_logger_data", JSON.stringify({ ...week1Preload }));
+      }
+
+      if (userInput === "20224193") {
+        alert("Welcome Admin Explorer Mode: O.E. Josiah. Tap dynamic student rows to audit their matrix sets.");
+        renderCohortSidebarDirectory(); 
+        document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
+      } else {
+        const backArrow = document.getElementById("back-navigation-arrow-id");
+        if (backArrow) backArrow.style.display = "none";
+        
+        renderAllWeeksHTML();
+        bindInputListeners();
+        loadSavedValuesToDOM();
+        
+        document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
+        openJosiahPortal(); 
+      }
       return;
     }
-
-    if (COHORT_REGISTRY[userInput]) {
-      let targetPassword = COHORT_REGISTRY[userInput].pass;
-
-      if (passInput === targetPassword) {
-        LOGGED_IN_USER = COHORT_REGISTRY[userInput];
-        AUDIT_TARGET_STUDENT = null; 
-        
-        document.getElementById('dynamic-user-name-display').innerText = `${LOGGED_IN_USER.name} (Matric: ${userInput})`;
-        
-        // 🔄 STREAM LIVE CLOUD DATA TO BROWSER DOM AT THIS EXACT SPLIT SECOND
-        await pullCloudRecordsToLocalCache(userInput);
-
-        if (userInput === "20224193") {
-          alert("Welcome Admin Explorer Mode: O.E. Josiah. Tap dynamic student rows to audit their matrix sets.");
-          renderCohortSidebarDirectory(); 
-          document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
-        } else {
-          const backArrow = document.getElementById("back-navigation-arrow-id");
-          if (backArrow) backArrow.style.display = "none";
-          
-          renderAllWeeksHTML();
-          bindInputListeners();
-          loadSavedValuesToDOM();
-          
-          document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
-          openJosiahPortal(); 
-        }
-        return;
-      }
-    }
-    errorLabel.style.display = 'block';
   }
+  errorLabel.style.display = 'block';
+}
 
   function terminatePortalSession() {
     LOGGED_IN_USER = null;
