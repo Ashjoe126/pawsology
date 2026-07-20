@@ -456,26 +456,40 @@
     });
   }
 
-  // 📡 GLOBAL DOWNLOAD LINK ENGINE (FINDS DATA ROW ON LOG IN OR DIRECT VIEW LAYER INVERSIONS)
-  async function pullCloudRecordsToLocalCache(matricNumber) {
-    try {
-      const { data, error } = await _supabase
-        .from('cohort_field_sync')
-        .select('full_payload')
-        .eq('matric_number', matricNumber)
-        .maybeSingle();
+  // ================================================================= -->
+// 📡 FIXED SMART DOWNLOAD ENGINE (PREVENTS ACCESS BLOCKS)
+// ================================================================= -->
+async function pullCloudRecordsToLocalCache(matricNumber) {
+  try {
+    const { data, error } = await _supabase
+      .from('cohort_field_sync')
+      .select('full_payload')
+      .eq('matric_number', matricNumber)
+      .maybeSingle();
 
-      if (!error && data && data.full_payload) {
-        localStorage.setItem("castor_logger_data", JSON.stringify(data.full_payload));
-        console.log("Universal Cloud synchronization complete. Clean dataset updated into local states.");
-      } else {
-        // If a student doesn't have a database profile yet, build a placeholder configuration blueprint
-        localStorage.setItem("castor_logger_data", JSON.stringify({ ...week1Preload }));
-      }
-    } catch(err) {
-      console.warn("Could not load cloud layout stream. Reverting safely to client workspace:", err);
+    if (!error && data && data.full_payload) {
+      localStorage.setItem("castor_logger_data", JSON.stringify(data.full_payload));
+      console.log("Universal Cloud synchronization complete. Clean dataset updated into local states.");
+    } else {
+      console.log("No existing cloud row found for this student. Generating clean prefix structure...");
+      
+      // Resolve the student's unique prefix layout dynamically based on their matric ID
+      let currentStudentContext = COHORT_REGISTRY[matricNumber];
+      let userPrefix = currentStudentContext ? currentStudentContext.prefix : "anonymous_";
+      
+      // Build a fresh, clean local baseline dictionary stamped with their correct prefix!
+      let freshPrefixedDatabase = {};
+      Object.keys(week1Preload).forEach(defaultKey => {
+        freshPrefixedDatabase[`${userPrefix}${defaultKey}`] = week1Preload[defaultKey];
+      });
+      
+      localStorage.setItem("castor_logger_data", JSON.stringify(freshPrefixedDatabase));
     }
+  } catch(err) {
+    console.warn("Could not load cloud layout stream. Reverting safely to client workspace:", err);
+    localStorage.setItem("castor_logger_data", JSON.stringify({}));
   }
+}
 
   async function executeHubAuthentication() {
   const userInput = document.getElementById('access-username').value.trim();
