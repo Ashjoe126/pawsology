@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>COLPLANT Pathology & Vertebrate Research Hub</title>
+<!-- Load Supabase Client SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Special+Elite&display=swap');
   
@@ -130,7 +132,7 @@
 </style>
 </head>
 <body>
-    <div id="hub-auth-gatekeeper" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #e5dfd3; z-index: 500000; display: flex; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box;">
+  <div id="hub-auth-gatekeeper" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #e5dfd3; z-index: 500000; display: flex; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box;">
     <div style="background: #fdfaf3; border: 2px solid #c9b99a; border-radius: 8px; padding: 30px; max-width: 400px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.1); box-sizing: border-box; text-align: center;">
       <div style="margin-bottom: 25px;">
         <span style="font-size: 40px;">🛡️</span>
@@ -153,7 +155,6 @@
   </div>
 
 <div class="wrapper">
-
   <div id="landing-view">
     <div class="header">
       <h1>COLPLANT Academic Research Portal</h1>
@@ -180,7 +181,7 @@
       <div class="hub-card">
         <h3>👥 2026/2027 Research Cohort (12 Students)</h3>
         <ul class="student-list" id="sidebar-cohort-list-mount">
-          <!-- Populated dynamic list -->
+          <!-- Populated dynamically via JS -->
         </ul>
         <p style="font-size:10px; color:#888; margin: 8px 0 0 0; text-align: right; font-style: italic;">
           *informations will be updated as soon as possible
@@ -204,14 +205,14 @@
       </div>
       <div style="display: flex; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.3); margin-top: 12px; padding-top: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.95;">
         <span><strong>Project Supervisor:</strong> Prof. O. A. Enikuomehin</span>
-        <span><strong>Field Researcher:</strong> <span id="dynamic-user-name-display">O. E. Josiah (Matric No: 20224193)</span></span>
+        <span><strong>Field Researcher:</strong> <span id="dynamic-user-name-display">Processing Secure Registry Connection...</span></span>
       </div>
     </div>
 
     <div class="global-actions-bar">
       <div class="sync-badge">
         <span class="sync-dot"></span>
-        <span>Mobi-Persistence Engine Active (Local Autosave Enabled)</span>
+        <span>Mobi-Persistence Engine Active (Universal Cloud Sync Enabled)</span>
       </div>
       <div>
         <button onclick="terminatePortalSession()" style="background: #a32a2a; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: bold; text-transform: uppercase;">Exit Session 🔒</button>
@@ -262,377 +263,145 @@
 
 <script>
   // ================================================================= -->
-  // 🔌 CLOUD SETUP REMOVED - RUNNING PURELY ON LOCALSTORAGE RESET
+  // 🔌 CLOUD INFRASTRUCTURE KEY ALIGNMENT ENGINE
   // ================================================================= -->
+  const SUPABASE_URL = "https://whbgnrqhrsqopxhorlkn.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_2Tcu846tbkOcyB3yYcVWcA_WkBzbnxy";
+  
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
   let activePrefixKeyContext = "";
   let AUDIT_TARGET_STUDENT = null;
+  let LOGGED_IN_USER = null;
 
   const COHORT_REGISTRY = {
     "20224193": { 
-      name: "O. E. Josiah", 
-      pass: "josiah114", 
-      prefix: "josiah_", 
-      treatments: "Mycology (V3: T1, T4, T5)",
+      name: "O. E. Josiah", pass: "josiah114", prefix: "josiah_", treatments: "Mycology (V3: T1, T4, T5)",
       plots: ["111", "203", "309", "114", "202", "310", "112", "204", "306"],
       labels: ["T1 Control (111)", "T1 Control (203)", "T1 Control (309)", "T4 2X (114)", "T4 2X (202)", "T4 2X (310)", "T5 3X (112)", "T5 3X (204)", "T5 3X (306)"],
       group2_title: "Experimental Group II: Foliar Fertilizer Standard Double Strength (T4)",
       group3_title: "Experimental Group III: Foliar Fertilizer Maximized Triple Strength (T5)",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "T4: 2X Dose (Rep I)",  "T4: 2X Dose (Rep II)",  "T4: 2X Dose (Rep III)",
-        "T5: 3X Dose (Rep I)",  "T5: 3X Dose (Rep II)",  "T5: 3X Dose (Rep III)"
-      ],
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "T4: 2X Dose (Rep I)", "T4: 2X Dose (Rep II)", "T4: 2X Dose (Rep III)", "T5: 3X Dose (Rep I)", "T5: 3X Dose (Rep II)", "T5: 3X Dose (Rep III)"],
       plot_descriptions: [
-        "Untreated reference standard block within Replication I canopy matrix array.",
-        "Central untreated reference standard block inside Replication II microclimate array.",
-        "Final untreated reference standard block position within Replication III array border.",
-        "Treated under high-gradient compound concentration (2X Dose). Rep I validation block.",
-        "Treated under high-gradient compound concentration (2X Dose). Rep II tracking array.",
-        "Treated under high-gradient compound concentration (2X Dose). Rep III perimeter bank layout.",
-        "Treated under maximized physiological limit concentration (3X Dose). Rep I evaluation block.",
-        "Treated under maximized physiological limit concentration (3X Dose). Rep II monitoring array.",
-        "Treated under maximized physiological limit concentration (3X Dose). Rep III monitoring check layout."
+        "Untreated reference standard block within Replication I canopy matrix array.", "Central untreated reference standard block inside Replication II microclimate array.", "Final untreated reference standard block position within Replication III array border.",
+        "Treated under high-gradient compound concentration (2X Dose). Rep I validation block.", "Treated under high-gradient compound concentration (2X Dose). Rep II tracking array.", "Treated under high-gradient compound concentration (2X Dose). Rep III perimeter bank layout.",
+        "Treated under maximized physiological limit concentration (3X Dose). Rep I evaluation block.", "Treated under maximized physiological limit concentration (3X Dose). Rep II monitoring array.", "Treated under maximized physiological limit concentration (3X Dose). Rep III monitoring check layout."
       ],
       session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
       nickname: "Joe", email: "josiah.olusegun@student.funaab.edu.ng", phone: "+234 812 345 6789", hobby: "Agricultural Programming", address: "Abeokuta, Ogun State", state_of_origin: "Ogun State", lga: "Abeokuta North", date_created: "July 19, 2026"
     },
     "20224209": { 
-      name: "E. A. Ojetayo", 
-      pass: "ezekiel109", 
-      prefix: "ezekiel_", 
-      treatments: "Mycology (V2: T1, T2, T3)",
+      name: "E. A. Ojetayo", pass: "ezekiel109", prefix: "ezekiel_", treatments: "Mycology (V2: T1, T2, T3)",
       plots: ["110", "203", "301", "109", "214", "305", "107", "212", "304"],
       labels: ["T1 Control (110)", "T1 Control (203)", "T1 Control (301)", "T2 OF 2.5 ton/hectare (109)", "T2 OF (214)", "T2 OF (305)", "T3 OF (107)", "T3 OF (212)", "T3 OF (304)"],
-      group2_title: "Experimental Group II: Organic Foliar Formulation (T2)",
-      group3_title: "Experimental Group III: Organic Foliar Formulation (T3)",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "T2: Organic Rep I",   "T2: Organic Rep II",   "T2: Organic Rep III",
-        "T3: Organic Rep I",   "T3: Organic Rep II",   "T3: Organic Rep III"
-      ],
-      plot_descriptions: [
-        "Untreated baseline block under Replication I control parameters.",
-        "Untreated baseline block under Replication II control parameters.",
-        "Untreated baseline block under Replication III control parameters.",
-        "Treated with Organic Foliar extract formula. Rep I observations.",
-        "Treated with Organic Foliar extract formula. Rep II observations.",
-        "Treated with Organic Foliar extract formula. Rep III observations.",
-        "Treated with Organic Foliar compound formulation. Rep I data row.",
-        "Treated with Organic Foliar compound formulation. Rep II data row.",
-        "Treated with Organic Foliar compound formulation. Rep III data row."
-      ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "ojetayo.e@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      group2_title: "Experimental Group II: Organic Foliar Formulation (T2)", group3_title: "Experimental Group III: Organic Foliar Formulation (T3)",
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "T2: Organic Rep I", "T2: Organic Rep II", "T2: Organic Rep III", "T3: Organic Rep I", "T3: Organic Rep II", "T3: Organic Rep III"],
+      plot_descriptions: ["Untreated baseline block under Replication I control parameters.", "Untreated baseline block under Replication II control parameters.", "Untreated baseline block under Replication III control parameters.", "Treated with Organic Foliar extract formula. Rep I observations.", "Treated with Organic Foliar extract formula. Rep II observations.", "Treated with Organic Foliar extract formula. Rep III observations.", "Treated with Organic Foliar compound formulation. Rep I data row.", "Treated with Organic Foliar compound formulation. Rep II data row.", "Treated with Organic Foliar compound formulation. Rep III data row."],
+      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport", nickname: "[Nickname]", email: "ojetayo.e@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
     },
     "20224152": { 
-      name: "S. O. Akinsowon", 
-      pass: "success105", 
-      prefix: "success_", 
-      treatments: "Mycology (V1: T1, T2, T4)",
+      name: "S. O. Akinsowon", pass: "success105", prefix: "success_", treatments: "Mycology (V1: T1, T2, T4)",
       plots: ["104", "209", "313", "105", "207", "312", "103", "206", "314"],
       labels: ["T1 Control (104)", "T1 Control (209)", "T1 Control (313)", "T2 (105)", "T2 (207)", "T2 (312)", "T4 (103)", "T4 (206)", "T4 (314)"],
-      group2_title: "Experimental Group II: Organic Foliar Formulation (T2)",
-      group3_title: "Experimental Group III: Foliar Fertilizer Standard Double Strength (T4)",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "T2: Organic Rep I",   "T2: Organic Rep II",   "T2: Organic Rep III",
-        "T4: 2X Dose Rep I",   "T4: 2X Dose Rep II",   "T4: 2X Dose Rep III"
-      ],
-      plot_descriptions: [
-        "Untreated reference block row within Replication I setup parameters.",
-        "Central untreated reference block inside Replication II layout matrix.",
-        "Final untreated reference block position within Replication III bank.",
-        "Treated with Organic Foliar formulation. Rep I dynamic monitoring.",
-        "Treated with Organic Foliar formulation. Rep II dynamic monitoring.",
-        "Treated with Organic Foliar formulation. Rep III dynamic monitoring.",
-        "Treated under high-gradient compound concentration (2X Dose). Rep I check.",
-        "Treated under high-gradient compound concentration (2X Dose). Rep II check.",
-        "Treated under high-gradient compound concentration (2X Dose). Rep III check."
-      ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "akinsowon.s@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      group2_title: "Experimental Group II: Organic Foliar Formulation (T2)", group3_title: "Experimental Group III: Foliar Fertilizer Standard Double Strength (T4)",
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "T2: Organic Rep I", "T2: Organic Rep II", "T2: Organic Rep III", "T4: 2X Dose Rep I", "T4: 2X Dose Rep II", "T4: 2X Dose Rep III"],
+      plot_descriptions: ["Untreated reference block row within Replication I setup parameters.", "Central untreated reference block inside Replication II layout matrix.", "Final untreated reference block position within Replication III bank.", "Treated with Organic Foliar formulation. Rep I dynamic monitoring.", "Treated with Organic Foliar formulation. Rep II dynamic monitoring.", "Treated with Organic Foliar formulation. Rep III dynamic monitoring.", "Treated under high-gradient compound concentration (2X Dose). Rep I check.", "Treated under high-gradient compound concentration (2X Dose). Rep II check.", "Treated under high-gradient compound concentration (2X Dose). Rep III check."],
+      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport", nickname: "[Nickname]", email: "akinsowon.s@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
     },
     "20224158": { 
-      name: "J. Odogwu", 
-      pass: "jerry107", 
-      prefix: "jerry_", 
-      treatments: "Mycology (V2: T1, T3, T5)",
+      name: "J. Odogwu", pass: "jerry107", prefix: "jerry_", treatments: "Mycology (V2: T1, T3, T5)",
       plots: ["110", "211", "301", "107", "212", "304", "106", "213", "302"],
       labels: ["T1 Control (110)", "T1 Control (211)", "T1 Control (301)", "T3 (107)", "T3 (212)", "T3 (304)", "T5 (106)", "T5 (213)", "T5 (302)"],
-      group2_title: "Experimental Group II: Organic Foliar Formulation (T3)",
-      group3_title: "Experimental Group III: Foliar Fertilizer Maximized Triple Strength (T5)",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "T3: Organic Rep I",   "T3: Organic Rep II",   "T3: Organic Rep III",
-        "T5: 3X Dose Rep I",   "T5: 3X Dose Rep II",   "T5: 3X Dose Rep III"
-      ],
-      plot_descriptions: [
-        "Untreated reference grid cell block inside Replication I grid block.",
-        "Untreated reference grid cell block inside Replication II grid block.",
-        "Untreated reference grid cell block inside Replication III grid block.",
-        "Treated with secondary organic formulation variants. Rep I tracker.",
-        "Treated with secondary organic formulation variants. Rep II tracker.",
-        "Treated with secondary organic formulation variants. Rep III tracker.",
-        "Treated under high-gradient maximum metric strength (3X Dose). Rep I plot.",
-        "Treated under high-gradient maximum metric strength (3X Dose). Rep II plot.",
-        "Treated under high-gradient maximum metric strength (3X Dose). Rep III plot."
-      ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "odogwu.j@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      group2_title: "Experimental Group II: Organic Foliar Formulation (T3)", group3_title: "Experimental Group III: Foliar Fertilizer Maximized Triple Strength (T5)",
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "T3: Organic Rep I", "T3: Organic Rep II", "T3: Organic Rep III", "T5: 3X Dose Rep I", "T5: 3X Dose Rep II", "T5: 3X Dose Rep III"],
+      plot_descriptions: ["Untreated reference grid cell block inside Replication I grid block.", "Untreated reference grid cell block inside Replication II grid block.", "Untreated reference grid cell block inside Replication III grid block.", "Treated with secondary organic formulation variants. Rep I tracker.", "Treated with secondary organic formulation variants. Rep II tracker.", "Treated with secondary organic formulation variants. Rep III tracker.", "Treated under high-gradient maximum metric strength (3X Dose). Rep I plot.", "Treated under high-gradient maximum metric strength (3X Dose). Rep II plot.", "Treated under high-gradient maximum metric strength (3X Dose). Rep III plot."],
+      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport", nickname: "[Nickname]", email: "odogwu.j@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
     },
     "20224182": { 
-      name: "E. M. Ikechukwu", 
-      pass: "esther108", 
-      prefix: "esther_", 
-      treatments: "Mycology (V2: T1, T4, T5)",
+      name: "E. M. Ikechukwu", pass: "esther108", prefix: "esther_", treatments: "Mycology (V2: T1, T4, T5)",
       plots: ["110", "211", "301", "108", "215", "303", "106", "213", "302"],
       labels: ["T1 Control (110)", "T1 Control (211)", "T1 Control (301)", "T4 (108)", "T4 (215)", "T4 (303)", "T5 (106)", "T5 (213)", "T5 (302)"],
-      group2_title: "Experimental Group II: Foliar Fertilizer Standard Double Strength (T4)",
-      group3_title: "Experimental Group III: Foliar Fertilizer Maximized Triple Strength (T5)",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "T4: 2X Dose Rep I",   "T4: 2X Dose Rep II",   "T4: 2X Dose Rep III",
-        "T5: 3X Dose Rep I",   "T5: 3X Dose Rep II",   "T5: 3X Dose Rep III"
-      ],
-      plot_descriptions: [
-        "Control reference check sector within Replication I parameters.",
-        "Control reference check sector within Replication II parameters.",
-        "Control reference check sector within Replication III parameters.",
-        "Evaluated under double strength synthetic solution rules. Rep I cell.",
-        "Evaluated under double strength synthetic solution rules. Rep II cell.",
-        "Evaluated under double strength synthetic solution rules. Rep III cell.",
-        "Monitored under localized hyper-concentration chemical limits. Rep I.",
-        "Monitored under localized hyper-concentration chemical limits. Rep II.",
-        "Monitored under localized hyper-concentration chemical limits. Rep III."
-      ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "ikechukwu.e@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      group2_title: "Experimental Group II: Foliar Fertilizer Standard Double Strength (T4)", group3_title: "Experimental Group III: Foliar Fertilizer Maximized Triple Strength (T5)",
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "T4: 2X Dose Rep I", "T4: 2X Dose Rep II", "T4: 2X Dose Rep III", "T5: 3X Dose Rep I", "T5: 3X Dose Rep II", "T5: 3X Dose Rep III"],
+      plot_descriptions: ["Control reference check sector within Replication I parameters.", "Control reference check sector within Replication II parameters.", "Control reference check sector within Replication III parameters.", "Evaluated under double strength synthetic solution rules. Rep I cell.", "Evaluated under double strength synthetic solution rules. Rep II cell.", "Evaluated under double strength synthetic solution rules. Rep III cell.", "Monitored under localized hyper-concentration chemical limits. Rep I.", "Monitored under localized hyper-concentration chemical limits. Rep II.", "Monitored under localized hyper-concentration chemical limits. Rep III."],
+      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport", nickname: "[Nickname]", email: "ikechukwu.e@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
     },
     "20224183": { 
-      name: "A. A. Ikuyajesin", 
-      pass: "malik103", 
-      prefix: "malik_", 
-      treatments: "Mycology (V1: T1, T4, T5)",
+      name: "A. A. Ikuyajesin", pass: "malik103", prefix: "malik_", treatments: "Mycology (V1: T1, T4, T5)",
       plots: ["104", "209", "313", "103", "206", "314", "102", "210", "311"],
       labels: ["T1 Control (104)", "T1 Control (209)", "T1 Control (313)", "T4 (103)", "T4 (206)", "T4 (314)", "T5 (102)", "T5 (210)", "T5 (311)"],
-      group2_title: "Experimental Group II: Foliar Fertilizer Standard Double Strength (T4)",
-      group3_title: "Experimental Group III: Foliar Fertilizer Maximized Triple Strength (T5)",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "T4: 2X Dose Rep I",   "T4: 2X Dose Rep II",   "T4: 2X Dose Rep III",
-        "T5: 3X Dose Rep I",   "T5: 3X Dose Rep II",   "T5: 3X Dose Rep III"
-      ],
-      plot_descriptions: [
-        "Baseline untreated reference standard array block in Replication I.",
-        "Baseline untreated reference standard array block in Replication II.",
-        "Baseline untreated reference standard array block in Replication III.",
-        "Treated under double strength foliar mixture compounds. Rep I track.",
-        "Treated under double strength foliar mixture compounds. Rep II track.",
-        "Treated under double strength foliar mixture compounds. Rep III track.",
-        "Treated under localized max threshold parameters (3X solution). Rep I.",
-        "Treated under localized max threshold parameters (3X solution). Rep II.",
-        "Treated under localized max threshold parameters (3X solution). Rep III."
-      ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "ikuyajesin.a@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      group2_title: "Experimental Group II: Foliar Fertilizer Standard Double Strength (T4)", group3_title: "Experimental Group III: Foliar Fertilizer Maximized Triple Strength (T5)",
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "T4: 2X Dose Rep I", "T4: 2X Dose Rep II", "T4: 2X Dose Rep III", "T5: 3X Dose Rep I", "T5: 3X Dose Rep II", "T5: 3X Dose Rep III"],
+      plot_descriptions: ["Baseline untreated reference standard array block in Replication I.", "Baseline untreated reference standard array block in Replication II.", "Baseline untreated reference standard array block in Replication III.", "Treated under double strength foliar mixture compounds. Rep I track.", "Treated under double strength foliar mixture compounds. Rep II track.", "Treated under double strength foliar mixture compounds. Rep III track.", "Treated under localized max threshold parameters (3X solution). Rep I.", "Treated under localized max threshold parameters (3X solution). Rep II.", "Treated under localized max threshold parameters (3X solution). Rep III."],
+      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport", nickname: "[Nickname]", email: "ikuyajesin.a@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
     },
     "20224219": { 
-      name: "O. V. Olatunbosun", 
-      pass: "gbotemi105", 
-      prefix: "gbotemi_", 
-      treatments: "Mycology (V1: T1, T2, T3)",
+      name: "O. V. Olatunbosun", pass: "gbotemi105", prefix: "gbotemi_", treatments: "Mycology (V1: T1, T2, T3)",
       plots: ["104", "209", "313", "105", "207", "312", "101", "208", "315"],
       labels: ["T1 Control (104)", "T1 Control (209)", "T1 Control (313)", "T2 OF (105)", "T2 OF (207)", "T2 OF (312)", "T3 OF (101)", "T3 OF (208)", "T3 OF (315)"],
-      group2_title: "Experimental Group II: Organic Foliar Formulation (T2)",
-      group3_title: "Experimental Group III: Organic Foliar Formulation (T3)",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "T2: Organic Rep I",   "T2: Organic Rep II",   "T2: Organic Rep III",
-        "T3: Organic Rep I",   "T3: Organic Rep II",   "T3: Organic Rep III"
-      ],
-      plot_descriptions: [
-        "Untreated verification index point position within Rep I section.",
-        "Untreated verification index point position within Rep II section.",
-        "Untreated verification index point position within Rep III section.",
-        "Sprayed via localized bio-organic foliar recipe values. Rep I slot.",
-        "Sprayed via localized bio-organic foliar recipe values. Rep II slot.",
-        "Sprayed via localized bio-organic foliar recipe values. Rep III slot.",
-        "Subject to compound organic nutrition solution paths. Rep I.",
-        "Subject to compound organic nutrition solution paths. Rep II.",
-        "Subject to compound organic nutrition solution paths. Rep III."
-      ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "olatunbosun.o@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      group2_title: "Experimental Group II: Organic Foliar Formulation (T2)", group3_title: "Experimental Group III: Organic Foliar Formulation (T3)",
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "T2: Organic Rep I", "T2: Organic Rep II", "T2: Organic Rep III", "T3: Organic Rep I", "T3: Organic Rep II", "T3: Organic Rep III"],
+      plot_descriptions: ["Untreated verification index point position within Rep I section.", "Untreated verification index point position within Rep II section.", "Untreated verification index point position within Rep III section.", "Sprayed via localized bio-organic foliar recipe values. Rep I slot.", "Sprayed via localized bio-organic foliar recipe values. Rep II slot.", "Sprayed via localized bio-organic foliar recipe values. Rep III slot.", "Subject to compound organic nutrition solution paths. Rep I.", "Subject to compound organic nutrition solution paths. Rep II.", "Subject to compound organic nutrition solution paths. Rep III."],
+      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport", nickname: "[Nickname]", email: "olatunbosun.o@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
     },
     "20224220": { 
-      name: "M. A. Oleribenma", 
-      pass: "marvelous113", 
-      prefix: "marvelous_", 
-      treatments: "Mycology (V3: T1, T2, T3)",
+      name: "M. A. Oleribenma", pass: "marvelous113", prefix: "marvelous_", treatments: "Mycology (V3: T1, T2, T3)",
       plots: ["111", "203", "309", "113", "201", "307", "115", "205", "308"],
       labels: ["T1 Control (111)", "T1 Control (203)", "T1 Control (309)", "T2 OF (113)", "T2 OF (201)", "T2 OF (307)", "T3 OF (115)", "T3 OF (205)", "T3 OF (308)"],
-      group2_title: "Experimental Group II: Organic Foliar Formulation (T2)",
-      group3_title: "Experimental Group III: Organic Foliar Formulation (T3)",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "T2: Organic Rep I",   "T2: Organic Rep II",   "T2: Organic Rep III",
-        "T3: Organic Rep I",   "T3: Organic Rep II",   "T3: Organic Rep III"
-      ],
-      plot_descriptions: [
-        "Unsprayed reference matrix standard control inside Replication I.",
-        "Unsprayed reference matrix standard control inside Replication II.",
-        "Unsprayed reference matrix standard control inside Replication III.",
-        "Treated via organic extract recipe models. Rep I field line.",
-        "Treated via organic extract recipe models. Rep II field line.",
-        "Treated via organic extract recipe models. Rep III field line.",
-        "Evaluated via deep secondary organic compounds. Rep I profile.",
-        "Evaluated via deep secondary organic compounds. Rep II profile.",
-        "Evaluated via deep secondary organic compounds. Rep III profile."
-      ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "oleribenma.m@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      group2_title: "Experimental Group II: Organic Foliar Formulation (T2)", group3_title: "Experimental Group III: Organic Foliar Formulation (T3)",
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "T2: Organic Rep I", "T2: Organic Rep II", "T2: Organic Rep III", "T3: Organic Rep I", "T3: Organic Rep II", "T3: Organic Rep III"],
+      plot_descriptions: ["Unsprayed reference matrix standard control inside Replication I.", "Unsprayed reference matrix standard control inside Replication II.", "Unsprayed reference matrix standard control inside Replication III.", "Treated via organic extract recipe models. Rep I field line.", "Treated via organic extract recipe models. Rep II field line.", "Treated via organic extract recipe models. Rep III field line.", "Evaluated via deep secondary organic compounds. Rep I profile.", "Evaluated via deep secondary organic compounds. Rep II profile.", "Evaluated via deep secondary organic compounds. Rep III profile."],
+      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport", nickname: "[Nickname]", email: "oleribenma.m@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
     },
     "20224231": { 
-      name: "I. O. Oyedele", 
-      pass: "ibrahim113", 
-      prefix: "ibrahim_", 
-      treatments: "Mycology (V3: T1, T2, T4)",
+      name: "I. O. Oyedele", pass: "ibrahim113", prefix: "ibrahim_", treatments: "Mycology (V3: T1, T2, T4)",
       plots: ["111", "203", "307", "113", "201", "307", "114", "202", "310"],
       labels: ["T1 Control (111)", "T1 Control (203)", "T1 Control (307)", "T2 OF (113)", "T2 OF (201)", "T2 OF (307)", "T4 FF (114)", "T4 FF (202)", "T4 FF (310)"],
-      group2_title: "Experimental Group II: Organic Foliar Formulation (T2)",
-      group3_title: "Experimental Group III: Foliar Fertilizer Standard Double Strength (T4)",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "T2: Organic Rep I",   "T2: Organic Rep II",   "T2: Organic Rep III",
-        "T4: 2X Dose Rep I",   "T4: 2X Dose Rep II",   "T4: 2X Dose Rep III"
-      ],
-      plot_descriptions: [
-        "Untreated replication zone block marker segment layout for Rep I.",
-        "Untreated replication zone block marker segment layout for Rep II.",
-        "Untreated replication zone block marker segment layout for Rep III.",
-        "Sprayed with standard active bio-organic compound layers. Rep I.",
-        "Sprayed with standard active bio-organic compound layers. Rep II.",
-        "Sprayed with standard active bio-organic compound layers. Rep III.",
-        "Monitored under double concentrated chemical leaf-feed solution. Rep I.",
-        "Monitored under double concentrated chemical leaf-feed solution. Rep II.",
-        "Monitored under double concentrated chemical leaf-feed solution. Rep III."
-      ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "oyedele.i@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      group2_title: "Experimental Group II: Organic Foliar Formulation (T2)", group3_title: "Experimental Group III: Foliar Fertilizer Standard Double Strength (T4)",
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "T2: Organic Rep I", "T2: Organic Rep II", "T2: Organic Rep III", "T4: 2X Dose Rep I", "T4: 2X Dose Rep II", "T4: 2X Dose Rep III"],
+      plot_descriptions: ["Untreated replication zone block marker segment layout for Rep I.", "Untreated replication zone block marker segment layout for Rep II.", "Untreated replication zone block marker segment layout for Rep III.", "Sprayed with standard active bio-organic compound layers. Rep I.", "Sprayed with standard active bio-organic compound layers. Rep II.", "Sprayed with standard active bio-organic compound layers. Rep III.", "Monitored under double concentrated chemical leaf-feed solution. Rep I.", "Monitored under double concentrated chemical leaf-feed solution. Rep II.", "Monitored under double concentrated chemical leaf-feed solution. Rep III."],
+      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport", nickname: "[Nickname]", email: "oyedele.i@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
     },
     "20224192": { 
-      name: "L. Joseph", 
-      pass: "louis192", 
-      prefix: "louis_", 
-      treatments: "Mycology (Not Assigned!!)",
+      name: "L. Joseph", pass: "louis192", prefix: "louis_", treatments: "Mycology (Not Assigned!!)",
       plots: ["141", "241", "341", "142", "242", "342", "143", "243", "343"], 
       labels: ["Control (141)", "Control (241)", "Control (341)", "Pending (142)", "Pending (242)", "Pending (342)", "Pending (143)", "Pending (243)", "Pending (343)"],
-      group2_title: "Vascular Specialist Profile Block Area A",
-      group3_title: "Vascular Specialist Profile Block Area B",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "Vascular Target A",   "Vascular Target B",   "Vascular Target C",
-        "Pending Slot I",      "Pending Slot II",     "Pending Slot III"
-      ],
-      plot_descriptions: [
-        "Vascular structural untreated base check block inside Replication I.",
-        "Vascular structural untreated base check block inside Replication II.",
-        "Vascular structural untreated base check block inside Replication III.",
-        "Vascular diagnostic section mapping parameters. Profile active.",
-        "Vascular diagnostic section mapping parameters. Profile active.",
-        "Vascular diagnostic section mapping parameters. Profile active.",
-        "Roster metrics layout space left blank for expansion requirements.",
-        "Roster metrics layout space left blank for expansion requirements.",
-        "Roster metrics layout space left blank for expansion requirements."
-      ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "louis.l@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      group2_title: "Vascular Specialist Profile Block Area A", group3_title: "Vascular Specialist Profile Block Area B",
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "Vascular Target A", "Vascular Target B", "Vascular Target C", "Pending Slot I", "Pending Slot II", "Pending Slot III"],
+      plot_descriptions: ["Vascular structural untreated base check block inside Replication I.", "Vascular structural untreated base check block inside Replication II.", "Vascular structural untreated base check block inside Replication III.", "Vascular diagnostic section mapping parameters. Profile active.", "Vascular diagnostic section mapping parameters. Profile active.", "Vascular diagnostic section mapping parameters. Profile active.", "Roster metrics layout space left blank for expansion requirements.", "Roster metrics layout space left blank for expansion requirements.", "Roster metrics layout space left blank for expansion requirements."],
+      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport", nickname: "[Nickname]", email: "louis.l@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
     }, 
     "20224196": { 
-      name: "O. G. Martin", 
-      pass: "goodness196", 
-      prefix: "goodness_", 
-      treatments: "Vertebrate Pests Section",
+      name: "O. G. Martin", pass: "goodness196", prefix: "goodness_", treatments: "Vertebrate Pests Section",
       plots: ["130", "228", "328", "131", "229", "329", "132", "230", "330"],
       labels: ["Control (130)", "Control (228)", "Control (328)", "T1 (131)", "T1 (229)", "T1 (329)", "T2 (132)", "T2 (230)", "T2 (330)"],
-      group2_title: "Vertebrate Control Strategy Model Group A (T1)",
-      group3_title: "Vertebrate Control Strategy Model Group B (T2)",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "T1: Strategy Rep I",  "T1: Strategy Rep II",  "T1: Strategy Rep III",
-        "T2: Strategy Rep I",  "T2: Strategy Rep II",  "T2: Strategy Rep III"
-      ],
-      plot_descriptions: [
-        "Vertebrate damage untreated reference block boundary field map.",
-        "Vertebrate damage untreated reference block boundary field map.",
-        "Vertebrate damage untreated reference block boundary field map.",
-        "Subject to specific crop protection netting or repellent applications.",
-        "Subject to specific crop protection netting or repellent applications.",
-        "Subject to specific crop protection netting or repellent applications.",
-        "Subject to compound vertebrate baiting or diversion treatment layout.",
-        "Subject to compound vertebrate baiting or diversion treatment layout.",
-        "Subject to compound vertebrate baiting or diversion treatment layout."
-      ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "martin.o@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      group2_title: "Vertebrate Control Strategy Model Group A (T1)", group3_title: "Vertebrate Control Strategy Model Group B (T2)",
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "T1: Strategy Rep I", "T1: Strategy Rep II", "T1: Strategy Rep III", "T2: Strategy Rep I", "T2: Strategy Rep II", "T2: Strategy Rep III"],
+      plot_descriptions: ["Vertebrate damage untreated reference block boundary field map.", "Vertebrate damage untreated reference block boundary field map.", "Vertebrate damage untreated reference block boundary field map.", "Subject to specific crop protection netting or repellent applications.", "Subject to specific crop protection netting or repellent applications.", "Subject to specific crop protection netting or repellent applications.", "Subject to compound vertebrate baiting or diversion treatment layout.", "Subject to compound vertebrate baiting or diversion treatment layout.", "Subject to compound vertebrate baiting or diversion treatment layout."],
+      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport", nickname: "[Nickname]", email: "martin.o@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
     },
     "20224189": { 
-      name: "O. Jayeoba", 
-      pass: "posi189", 
-      prefix: "posi_", 
-      treatments: "Vertebrate Pests Section",
+      name: "O. Jayeoba", pass: "posi189", prefix: "posi_", treatments: "Vertebrate Pests Section",
       plots: ["133", "231", "331", "134", "232", "332", "135", "233", "333"],
       labels: ["Control (133)", "Control (231)", "Control (331)", "T1 (134)", "T1 (232)", "T1 (332)", "T2 (135)", "T2 (233)", "T2 (333)"],
-      group2_title: "Vertebrate Control Strategy Model Group A (T1)",
-      group3_title: "Vertebrate Control Strategy Model Group B (T2)",
-      plot_codes: [
-        "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "T1: Strategy Rep I",  "T1: Strategy Rep II",  "T1: Strategy Rep III",
-        "T2: Strategy Rep I",  "T2: Strategy Rep II",  "T2: Strategy Rep III"
-      ],
-      plot_descriptions: [
-        "Vertebrate tracking baseline check index section in Replication I.",
-        "Vertebrate tracking baseline check index section in Replication II.",
-        "Vertebrate tracking baseline check index section in Replication III.",
-        "Protected via barrier canopy monitoring installation configurations.",
-        "Protected via barrier canopy monitoring installation configurations.",
-        "Protected via barrier canopy monitoring installation configurations.",
-        "Evaluated via localized repellent field application methods. Rep I.",
-        "Evaluated via localized repellent field application methods. Rep II.",
-        "Evaluated via localized repellent field application methods. Rep III."
-      ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "jayeoba.o@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      group2_title: "Vertebrate Control Strategy Model Group A (T1)", group3_title: "Vertebrate Control Strategy Model Group B (T2)",
+      plot_codes: ["T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)", "T1: Strategy Rep I", "T1: Strategy Rep II", "T1: Strategy Rep III", "T2: Strategy Rep I", "T2: Strategy Rep II", "T2: Strategy Rep III"],
+      plot_descriptions: ["Vertebrate tracking baseline check index section in Replication I.", "Vertebrate tracking baseline check index section in Replication II.", "Vertebrate tracking baseline check index section in Replication III.", "Protected via barrier canopy monitoring installation configurations.", "Protected via barrier canopy monitoring installation configurations.", "Protected via barrier canopy monitoring installation configurations.", "Evaluated via localized repellent field application methods. Rep I.", "Evaluated via localized repellent field application methods. Rep II.", "Evaluated via localized repellent field application methods. Rep III."],
+      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport", nickname: "[Nickname]", email: "jayeoba.o@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
     }
   };
-
-  let LOGGED_IN_USER = null;
 
   function initializeMatrixDatabase() {
     let localDatabase = localStorage.getItem("castor_logger_data");
     if (!localDatabase) {
-      localDatabase = { ...week1Preload };
-      localStorage.setItem("castor_logger_data", JSON.stringify(localDatabase));
-    } else {
-      localDatabase = JSON.parse(localDatabase);
-      for (let key in week1Preload) {
-        if (localDatabase[key] === undefined) {
-          localDatabase[key] = week1Preload[key];
-        }
-      }
-      localStorage.setItem("castor_logger_data", JSON.stringify(localDatabase));
+      localStorage.setItem("castor_logger_data", JSON.stringify({ ...week1Preload }));
     }
-    
     renderCohortSidebarDirectory(); 
-    renderAllWeeksHTML();
-    bindInputListeners();
-    loadSavedValuesToDOM();
   }
 
   function renderCohortSidebarDirectory() {
     const listMount = document.getElementById("sidebar-cohort-list-mount");
     if (!listMount) return;
-    
     listMount.innerHTML = "";
     
     let isSupervisorMode = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "supervisor");
@@ -640,16 +409,13 @@
 
     Object.keys(COHORT_REGISTRY).forEach(matricId => {
       const studentData = COHORT_REGISTRY[matricId];
-      
       const listItem = document.createElement("li");
       listItem.className = "student-item";
       
       const leftProfileClickable = document.createElement("div");
       leftProfileClickable.className = "clickable-profile-zone";
       leftProfileClickable.innerHTML = `<strong>${studentData.name} (Matric: ${matricId})</strong>`;
-      leftProfileClickable.onclick = function() {
-        launchMetadataProfileModal(matricId);
-      };
+      leftProfileClickable.onclick = function() { launchMetadataProfileModal(matricId); };
 
       const rightBadgeClickable = document.createElement("div");
       rightBadgeClickable.className = "clickable-data-zone";
@@ -659,19 +425,17 @@
       
       if (isSupervisorMode || isJosiahExplorer) {
         rightBadgeClickable.style.cursor = "pointer";
-        rightBadgeClickable.onclick = function() {
-          if (studentData.plots.length === 0) {
-            alert(`Field plots have not been officially appointed to ${studentData.name} yet.`);
-            return;
-          }
-          
+        rightBadgeClickable.onclick = async function() {
           AUDIT_TARGET_STUDENT = studentData;
           
           if (isJosiahExplorer) {
-            document.getElementById('dynamic-user-name-display').innerText = `${studentData.name} (Matric: ${matricId}) [JOSIAH EXPLORER READ-ONLY VIEW]`;
+            document.getElementById('dynamic-user-name-display').innerText = `${studentData.name} (Matric: ${matricId}) [EXPLORER READ-ONLY]`;
           } else {
-            document.getElementById('dynamic-user-name-display').innerText = `${studentData.name} (Matric: ${matricId}) [SUPERVISOR AUDIT VIEW]`;
+            document.getElementById('dynamic-user-name-display').innerText = `${studentData.name} (Matric: ${matricId}) [SUPERVISOR AUDIT]`;
           }
+
+          // Force download of the audited target student's clean data from the cloud table row directly
+          await pullCloudRecordsToLocalCache(matricId);
           
           renderAllWeeksHTML();
           bindInputListeners();
@@ -679,7 +443,6 @@
           
           const backArrow = document.getElementById("back-navigation-arrow-id");
           if (backArrow) backArrow.style.display = "block";
-          
           openJosiahPortal();
         };
       } else {
@@ -693,78 +456,31 @@
     });
   }
 
-  function launchMetadataProfileModal(matricId) {
-    const s = COHORT_REGISTRY[matricId];
-    if (!s) return;
+  // 📡 GLOBAL DOWNLOAD LINK ENGINE (FINDS DATA ROW ON LOG IN OR DIRECT VIEW LAYER INVERSIONS)
+  async function pullCloudRecordsToLocalCache(matricNumber) {
+    try {
+      const { data, error } = await _supabase
+        .from('cohort_field_sync')
+        .select('full_payload')
+        .eq('matric_number', matricNumber)
+        .maybeSingle();
 
-    const overlay = document.createElement("div");
-    overlay.className = "profile-modal-overlay";
-    
-    overlay.innerHTML = `
-      <div class="profile-modal-card">
-        <div class="profile-modal-header">🍄 MYCOLOGY PATHOLOGY DIRECTORY</div>
-        <div class="profile-modal-body">
-          <div style="font-size:11px; text-align:center; font-weight:bold; color:#64748b; margin-bottom:12px;">
-            2026/2027 Academic Session<br>Supervisor: Prof O.A. Enikuomehin
-          </div>
-          <div class="passport-frame">
-            <span>Affix Passport<br>Photograph Here</span>
-          </div>
-          <table class="profile-table">
-            <tr><td class="label-col">Full Name:</td><td>${s.name}</td></tr>
-            <tr><td class="label-col">Matric No:</td><td>${matricId}</td></tr>
-            <tr><td class="label-col">Nickname:</td><td>${s.nickname || '[Pending]'}</td></tr>
-            <tr><td class="label-col">Email Address:</td><td>${s.email || '[Pending]'}</td></tr>
-            <tr><td class="label-col">Phone Number:</td><td>${s.phone || '[Pending]'}</td></tr>
-            <tr><td class="label-col">Hobby:</td><td>${s.hobby || '[Pending]'}</td></tr>
-            <tr><td class="label-col">Residential:</td><td>${s.address || '[Pending]'}</td></tr>
-            <tr><td class="label-col">State of Origin:</td><td>${s.state_of_origin || '[Pending]'}</td></tr>
-            <tr><td class="label-col">L.G.A:</td><td>${s.lga || '[Pending]'}</td></tr>
-            <tr><td class="label-col">Date Logged:</td><td>${s.date_created}</td></tr>
-          </table>
-          <button class="profile-modal-close-btn" onclick="this.closest('.profile-modal-overlay').remove()">Close Profile Document View</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
+      if (!error && data && data.full_payload) {
+        localStorage.setItem("castor_logger_data", JSON.stringify(data.full_payload));
+        console.log("Universal Cloud synchronization complete. Clean dataset updated into local states.");
+      } else {
+        // If a student doesn't have a database profile yet, build a placeholder configuration blueprint
+        localStorage.setItem("castor_logger_data", JSON.stringify({ ...week1Preload }));
+      }
+    } catch(err) {
+      console.warn("Could not load cloud layout stream. Reverting safely to client workspace:", err);
+    }
   }
 
-  function openPasswordCustomizationPanel(matricId) {
-    const s = COHORT_REGISTRY[matricId];
-    if (!s) return;
-    
-    if (LOGGED_IN_USER.prefix !== "supervisor" && LOGGED_IN_USER.prefix !== s.prefix) {
-      alert("Access Denied: You are not authorized to update credentials logs parameters for this candidate slot.");
-      return;
-    }
-
-    const currentVerify = prompt("Verification Step:\nPlease input the CURRENT active access security authorization password:");
-    if (currentVerify !== s.pass) {
-      alert("⚠️ Verification Error: Input password does not match registry database records index code.");
-      return;
-    }
-
-    const newPass1 = prompt("Success Verified.\nPlease input your NEW security authorization password:");
-    if (!newPass1 || newPass1.trim().length < 4) {
-      alert("⚠️ Security Protocol Fault: Password field entries must contain at least 4 text characters.");
-      return;
-    }
-
-    const newPass2 = prompt("Please confirm your NEW password once again:");
-    if (newPass1 !== newPass2) {
-      alert("⚠️ Data Entry Fault: Confirmation matching check failed. Operation aborted.");
-      return;
-    }
-
-    s.pass = newPass1.trim();
-    alert(`🔑 Password updated locally in device memory!`);
-  }
-
-  function executeHubAuthentication() {
+  async function executeHubAuthentication() {
     const userInput = document.getElementById('access-username').value.trim();
     const passInput = document.getElementById('access-password').value.trim();
     const errorLabel = document.getElementById('access-error-lbl');
-    
     errorLabel.style.display = 'none';
 
     if (userInput === "enikuomehin@funaab.edu.ng" && passInput === "MASTER_PATHOLOGY_2026") {
@@ -784,8 +500,11 @@
         
         document.getElementById('dynamic-user-name-display').innerText = `${LOGGED_IN_USER.name} (Matric: ${userInput})`;
         
+        // 🔄 STREAM LIVE CLOUD DATA TO BROWSER DOM AT THIS EXACT SPLIT SECOND
+        await pullCloudRecordsToLocalCache(userInput);
+
         if (userInput === "20224193") {
-          alert("Welcome Admin Explorer Mode: O.E. Josiah. You can now tap student rows to view their details or records.");
+          alert("Welcome Admin Explorer Mode: O.E. Josiah. Tap dynamic student rows to audit their matrix sets.");
           renderCohortSidebarDirectory(); 
           document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
         } else {
@@ -802,7 +521,6 @@
         return;
       }
     }
-
     errorLabel.style.display = 'block';
   }
 
@@ -811,74 +529,215 @@
     AUDIT_TARGET_STUDENT = null;
     document.getElementById('access-username').value = "";
     document.getElementById('access-password').value = "";
-    
-    renderAllWeeksHTML();
-    bindInputListeners();
+    localStorage.removeItem("castor_logger_data"); // Strip workspace to clear tracking context for next login safely
     closeJosiahPortal();
     document.getElementById('hub-auth-gatekeeper').style.display = 'flex'; 
-  } 
-
-  const weeksConfig = [
-    { num: 1, date: "July 14, 2026", header: "Baseline Assessment Stage (40 DAP)" },
-    { num: 2, date: "July 21, 2026", header: "Vegetative Phase Monitoring (47 DAP)" },
-    { num: 3, date: "July 28, 2026", header: "Mid-Cycle Developmental Sizing (54 DAP)" },
-    { num: 4, date: "Aug 04, 2026", header: "Early Flowering Canopy Track (61 DAP)" },
-    { num: 5, date: "Aug 11, 2026", header: "Pod Setting Sickness Matrix (68 DAP)" },
-    { num: 6, date: "Aug 18, 2026", header: "Pre-Harvest Sickness Final Termination (75 DAP)" }
-  ];
-
-  const week1Preload = {
-    "w1_111_p1_ctl": "5", "w1_111_p1_blc": "0", "w1_111_p1_slc": "2", "w1_111_p1_bll": "0.0", "w1_111_p1_blb": "0.0", "w1_111_p1_sqc": "5", "w1_111_p1_imgA_src": "https://i.postimg.cc/LsbCtnM3/IMG-20260714-WA0011.jpg",
-    "w1_111_p2_ctl": "6", "w1_111_p2_blc": "1", "w1_111_p2_slc": "2", "w1_111_p2_bll": "0.3", "w1_111_p2_blb": "0.6", "w1_111_p2_sqc": "5", "w1_111_p2_imgA_src": "https://i.postimg.cc/wvc465W6/IMG-20260714-WA0013.jpg",
-    "w1_111_p3_ctl": "5", "w1_111_p3_blc": "0", "w1_111_p3_slc": "0", "w1_111_p3_bll": "0.0", "w1_111_p3_blb": "0.0", "w1_111_p3_sqc": "0",
-    "w1_111_notes": "Plant 1: Displays active early leaf spot on 2 leaves. Plant 2: Exhibits mixed susceptibility profile with blight lesion measuring 0.3x0.6cm and leaf spots. Plant 3: Entirely clean.",
-    "w1_203_p1_ctl": "5", "w1_203_p1_blc": "1", "w1_203_p1_slc": "0", "w1_203_p1_bll": "0.4", "w1_203_p1_blb": "0.3", "w1_203_p1_sqc": "0", "w1_203_p1_imgA_src": "https://i.postimg.cc/pLg29PX7/IMG-20260716-WA0007.jpg",
-    "w1_203_p2_ctl": "4", "w1_203_p2_blc": "0", "w1_203_p2_slc": "0", "w1_203_p2_bll": "0.0", "w1_203_p2_blb": "0.0", "w1_203_p2_sqc": "0",
-    "w1_203_p3_ctl": "5", "w1_203_p3_blc": "0", "w1_203_p3_slc": "0", "w1_203_p3_bll": "0.0", "w1_203_p3_blb": "0.0", "w1_203_p3_sqc": "0",
-    "w1_203_notes": "Plant 1: Exhibits localized vulnerability to Blight with dry brown patches. Plant 2 and Plant 3 remain clean and healthy.",
-    "w1_309_p1_ctl": "5", "w1_309_p1_blc": "1", "w1_309_p1_slc": "1", "w1_309_p1_bll": "0.3", "w1_309_p1_blb": "0.6", "w1_309_p1_sqc": "3", "w1_309_p1_imgA_src": "https://i.postimg.cc/sDMPyJQV/IMG-20260716-WA0022.jpg",
-    "w1_309_p2_ctl": "6", "w1_309_p2_blc": "2", "w1_309_p2_slc": "1", "w1_309_p2_bll": "0.7", "w1_309_p2_blb": "0.5", "w1_309_p2_sqc": "3", "w1_309_p2_imgA_src": "https://i.postimg.cc/cH4Z2hxF/IMG-20260716-WA0024.jpg",
-    "w1_309_p2_imgB_src": "https://i.postimg.cc/CMRHVV66/IMG-20260716-WA0027.jpg",
-    "w1_309_p3_ctl": "6", "w1_309_p3_blc": "3", "w1_309_p3_slc": "0", "w1_309_p3_bll": "0.7", "w1_309_p3_blb": "0.4", "w1_309_p3_sqc": "0", "w1_309_p3_imgA_src": "https://i.postimg.cc/PJnqcZ7f/IMG-20260716-WA0030.jpg",
-    "w1_309_notes": "Plant 1: Combined vulnerability. Plant 2: Sizable lesion with a brittle hole forming. Plant 3: 3 out of 6 leaves are infected with sub-marginal blight close to margins.",
-    "w1_114_p1_ctl": "6", "w1_114_p1_blc": "0", "w1_114_p1_slc": "0", "w1_114_p1_bll": "0.0", "w1_114_p1_blb": "0.0", "w1_114_p1_sqc": "0",
-    "w1_114_p2_ctl": "7", "w1_114_p2_blc": "0", "w1_114_p2_slc": "1", "w1_114_p2_bll": "0.0", "w1_114_p2_blb": "0.0", "w1_114_p2_sqc": "1", "w1_114_p2_imgA_src": "https://i.postimg.cc/HnvdW8zX/IMG-20260714-WA0026.jpg",
-    "w1_114_p3_ctl": "4", "w1_114_p3_blc": "0", "w1_114_p3_slc": "1", "w1_114_p3_bll": "0.0", "w1_114_p3_blb": "0.0", "w1_114_p3_sqc": "3", "w1_114_p3_imgA_src": "https://i.postimg.cc/fRmyC55F/IMG-20260714-WA0028.jpg",
-    "w1_114_notes": "Plant 1: Completely healthy under T4 compound. Plant 2 and Plant 3 exhibit trace leaf spot activity with low quadrant tally levels.",
-    "w1_202_p1_ctl": "7", "w1_202_p1_blc": "4", "w1_202_p1_slc": "0", "w1_202_p1_bll": "1.0", "w1_202_p1_blb": "0.9", "w1_202_p1_sqc": "0", "w1_202_p1_imgA_src": "https://i.postimg.cc/90Cs3Xjs/IMG-20260714-WA0030.jpg",
-    "w1_202_p2_ctl": "6", "w1_202_p2_blc": "1", "w1_202_p2_slc": "0", "w1_202_p2_bll": "1.1", "w1_202_p2_blb": "0.4", "w1_202_p2_sqc": "0", "w1_202_p2_imgA_src": "https://i.postimg.cc/K84ZRfgh/IMG-20260714-WA0034.jpg",
-    "w1_202_p3_ctl": "5", "w1_202_p3_blc": "0", "w1_202_p3_slc": "0", "w1_202_p3_bll": "0.0", "w1_202_p3_blb": "0.0", "w1_202_p3_sqc": "0",
-    "w1_202_notes": "Plant 1: Prominent apical lesion extending down tip. Plant 2: Blight spread internally along lateral veins. Plant 3: Healthy.",
-    "w1_310_p1_ctl": "6", "w1_310_p1_blc": "0", "w1_310_p1_slc": "3", "w1_310_p1_bll": "0.0", "w1_310_p1_blb": "0.0", "w1_310_p1_sqc": "8", "w1_310_p1_imgA_src": "https://i.postimg.cc/B6Hh49mY/IMG-20260716-WA0015.jpg",
-    "w1_310_p2_ctl": "5", "w1_310_p2_blc": "1", "w1_310_p2_slc": "1", "w1_310_p2_bll": "0.3", "w1_310_p2_blb": "0.2", "w1_310_p2_sqc": "1", "w1_310_p2_imgA_src": "https://i.postimg.cc/k4Gnpsw7/IMG-20260716-WA0017.jpg",
-    "w1_310_p2_imgB_src": "https://i.postimg.cc/bwRSX60b/IMG-20260716-WA0020.jpg",
-    "w1_310_p3_ctl": "5", "w1_310_p3_blc": "1", "w1_310_p3_slc": "0", "w1_310_p3_bll": "0.7", "w1_310_p3_blb": "0.6", "w1_310_p3_sqc": "0", "w1_310_p3_imgA_src": "https://i.postimg.cc/0j3dwVXz/IMG-20260717-WA0001.jpg",
-    "w1_310_notes": "Plant 1: Active leaf spot canopy with high quadrant density. Plant 2: Co-existing lines with distinct chlorotic margins. Plant 3: Marginal tip lesion observed.",
-    "w1_112_p1_ctl": "5", "w1_112_p1_blc": "0", "w1_112_p1_slc": "2", "w1_112_p1_bll": "0.0", "w1_112_p1_blb": "0.0", "w1_112_p1_sqc": "5", "w1_112_p1_imgA_src": "https://i.postimg.cc/rsgfX8fW/IMG-20260714-WA0016.jpg",
-    "w1_112_p2_ctl": "5", "w1_112_p2_blc": "0", "w1_112_p2_slc": "2", "w1_112_p2_bll": "0.0", "w1_112_p2_blb": "0.0", "w1_112_p2_sqc": "4", "w1_112_p2_imgA_src": "https://i.postimg.cc/wBg8pBVk/IMG-20260714-WA0018.jpg",
-    "w1_112_p3_ctl": "6", "w1_112_p3_blc": "1", "w1_112_p3_slc": "1", "w1_112_p3_bll": "1.5", "w1_112_p3_blb": "0.7", "w1_112_p3_sqc": "6", "w1_112_p3_imgA_src": "https://i.postimg.cc/BZLKDZTg/IMG-20260714-WA0024.jpg",
-    "w1_112_p3_imgB_src": "https://i.postimg.cc/FzsCWdhZ/IMG-20260714-WA0022.jpg",
-    "w1_112_notes": "Plant 1 and 2: Structural tolerance under 3X treatment. Plant 3: Sub-marginal lesion bordered by primary veins and surrounded by light chlorotic halo zone.",
-    "w1_204_p1_ctl": "5", "w1_204_p1_blc": "1", "w1_204_p1_slc": "0", "w1_204_p1_bll": "0.6", "w1_204_p1_blb": "0.5", "w1_204_p1_sqc": "0", "w1_204_p1_imgA_src": "https://i.postimg.cc/BnD9ty7v/IMG-20260716-WA0003.jpg",
-    "w1_204_p2_ctl": "6", "w1_204_p2_blc": "0", "w1_204_p2_slc": "2", "w1_204_p2_bll": "0.0", "w1_204_p2_blb": "0.0", "w1_204_p2_sqc": "1", "w1_204_p2_imgA_src": "https://i.postimg.cc/tT62zQPx/IMG-20260716-WA0005.jpg",
-    "w1_204_p3_ctl": "4", "w1_204_p3_blc": "0", "w1_204_p3_slc": "0", "w1_204_p3_bll": "0.0", "w1_204_p3_blb": "0.0", "w1_204_p3_sqc": "0",
-    "w1_204_notes": "Plant 1: Blight lesion accompanied by irregular pest shot-hole breaks. Plant 2: Spot active. Plant 3: Clear.",
-    "w1_306_p1_ctl": "5", "w1_306_p1_blc": "0", "w1_306_p1_slc": "2", "w1_306_p1_bll": "0.0", "w1_306_p1_blb": "0.0", "w1_306_p1_sqc": "1", "w1_306_p1_imgA_src": "https://i.postimg.cc/X7W4dnFQ/IMG-20260716-WA0009.jpg",
-    "w1_306_p2_ctl": "4", "w1_306_p2_blc": "1", "w1_306_p2_slc": "0", "w1_306_p2_bll": "0.3", "w1_306_p2_blb": "0.2", "w1_306_p2_sqc": "0", "w1_306_p2_imgA_src": "https://i.postimg.cc/qMWcjZJ6/IMG-20260716-WA0011.jpg",
-    "w1_306_p3_ctl": "5", "w1_306_p3_blc": "0", "w1_306_p3_slc": "0", "w1_306_p3_bll": "0.0", "w1_306_p3_blb": "0.0", "w1_306_p3_sqc": "0", "w1_306_p3_imgA_src": "https://i.postimg.cc/5yRTtdcd/IMG-20260716-WA0013.jpg",
-    "w1_306_notes": "Plant 1: Low-density leaf spot tracked. Plant 2: Micro-blight patch present. Plant 3: Basal lowermost leaves turning yellow."
-  };
-
-  function openJosiahPortal() {
-    document.getElementById('landing-view').style.display = 'none';
-    document.getElementById('core-matrix-view').style.display = 'block';
-    window.scrollTo(0,0);
   }
-  
-  function closeJosiahPortal() {
-    document.getElementById('core-matrix-view').style.display = 'none';
-    document.getElementById('landing-view').style.display = 'block';
-    window.scrollTo(0,0);
+
+  // ================================================================= -->
+  // ⚡ AUTOMATED OVERWRITE DATA STREAMING LOOP
+  // ================================================================= -->
+  async function saveValueToCache(key, value) {
+    let database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
+    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
+    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
+    
+    let isolatedKey = key.startsWith(userPrefix) ? key : userPrefix + key;
+    database[isolatedKey] = value;
+    localStorage.setItem("castor_logger_data", JSON.stringify(database));
+
+    if (LOGGED_IN_USER) {
+      let targetMatric = Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === activeContext.prefix);
+      if (!targetMatric && LOGGED_IN_USER.prefix === "supervisor") {
+        targetMatric = AUDIT_TARGET_STUDENT ? Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === AUDIT_TARGET_STUDENT.prefix) : "supervisor_audit";
+      }
+
+      if (!targetMatric) return;
+
+      try {
+        // Upsert targets the unique matric primary key row and overwrites data maps directly without duplicates
+        await _supabase
+          .from('cohort_field_sync')
+          .upsert({ 
+            matric_number: targetMatric, 
+            prefix_id: activeContext.prefix, 
+            full_payload: database,
+            updated_at: new Date().toISOString()
+          });
+      } catch (err) {
+        console.error("Transmission error syncing data states to core servers:", err);
+      }
+    }
+  }
+
+  // ================================================================= -->
+  // 📸 AUTOMATED FILE REPLACEMENT & STABLE BUCKET STORAGE STREAM
+  // ================================================================= -->
+  async function processIncomingPhoto(storageKeyPrefix, inputElement) {
+    if (!inputElement.files || !inputElement.files[0]) return;
+    
+    const file = inputElement.files[0];
+    const targetBox = document.getElementById(`box_${storageKeyPrefix}`);
+    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
+    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
+    
+    if (targetBox) {
+      targetBox.innerHTML = `<span style="font-size:9px; font-weight:bold; color:var(--blue);">⏳ COMPRESSING...</span>`;
+    }
+
+    const compressImageFile = (sourceFile) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(sourceFile);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            let width = img.width;
+            let height = img.height;
+            const max_size = 1000;
+            if (width > height && width > max_size) {
+              height *= max_size / width; width = max_size;
+            } else if (height > max_size) {
+              width *= max_size / height; height = max_size;
+            }
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => { resolve(blob); }, "image/jpeg", 0.7);
+          };
+        };
+      });
+    };
+
+    const optimizedBlob = await compressImageFile(file);
+
+    if (targetBox) {
+      targetBox.innerHTML = `<span style="font-size:9px; font-weight:bold; color:var(--green);">📡 CLOUD SYNCING...</span>`;
+    }
+
+    try {
+      // FIX: Filename locks to a uniform string format structure. No random timestamps means Supabase overwrites it on the same spot.
+      const uniqueFileName = `${userPrefix}${storageKeyPrefix}.jpg`;
+      
+      const { data, error } = await _supabase.storage
+        .from('castor_photos')
+        .upload(uniqueFileName, optimizedBlob, {
+          contentType: 'image/jpeg',
+          upsert: true 
+        });
+
+      if (error) throw error;
+
+      const { data: publicUrlData } = _supabase.storage
+        .from('castor_photos')
+        .getPublicUrl(uniqueFileName);
+
+      // Cache breaker query parameters appended so the web view drops old cached layers and loads the newly saved graphic instantly
+      const permanentCloudUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+
+      if (targetBox) {
+        targetBox.innerHTML = `<img src="${permanentCloudUrl}" alt="Evidence"><div class="view-overlay-indicator">🔍 View</div>`;
+      }
+
+      await saveValueToCache(`${storageKeyPrefix}_src`, permanentCloudUrl);
+      
+    } catch (err) {
+      console.error("Cloud Asset Storage Error Stream:", err);
+      alert("Failed to overwrite data image layer securely in public directories.");
+      if (targetBox) targetBox.innerHTML = "📷";
+    }
+  }
+
+  function loadSavedValuesToDOM() {
+    const database = JSON.parse(localStorage.getItem("castor_logger_data"));
+    let isSupervisorMode = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "supervisor");
+    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
+    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
+    let isJosiah = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "josiah_");
+
+    document.querySelectorAll(".core-logger-input").forEach(element => {
+      const key = element.getAttribute("data-key");
+      let isolatedKey = key.startsWith(userPrefix) ? key : userPrefix + key;
+      
+      if (database && database[isolatedKey] !== undefined) {
+        element.value = database[isolatedKey];
+      } else {
+        element.value = "";
+      }
+
+      if (isSupervisorMode) {
+        if (!element.classList.contains("comment-textarea")) {
+          element.disabled = true; element.style.backgroundColor = "#f4f1e6"; element.style.cursor = "not-allowed";
+        } else {
+          element.disabled = false; element.style.backgroundColor = "#fff";
+          element.oninput = function() { saveValueToCache(this.getAttribute("data-key"), this.value); };
+        }
+      } 
+      else if (isJosiah) {
+        if (AUDIT_TARGET_STUDENT && AUDIT_TARGET_STUDENT.prefix !== "josiah_") {
+          element.disabled = true; element.style.backgroundColor = "#f4f1e6"; element.style.cursor = "not-allowed";
+        } else {
+          if (element.classList.contains("comment-textarea")) {
+            element.disabled = true; element.style.backgroundColor = "#f4f1e6";
+          } else {
+            element.disabled = false; element.style.backgroundColor = "#fff";
+          }
+        }
+      } 
+      else {
+        if (element.classList.contains("comment-textarea")) {
+          element.disabled = true;
+        } else {
+          element.disabled = false; element.style.backgroundColor = "#fff";
+        }
+      }
+    });
+
+    let currentActivePlots = (activeContext && activeContext.plots) ? activeContext.plots : ["111", "203", "309", "114", "202", "310", "112", "204", "306"];
+    
+    currentActivePlots.forEach(plotId => {
+      for(let w=1; w<=6; w++) {
+        for(let p=1; p<=3; p++) {
+          let prefix = `w${w}_${plotId}_p${p}`;
+          ['imgA', 'imgB'].forEach(slot => {
+            let storageKey = `${userPrefix}${prefix}_${slot}_src`;
+            let container = document.getElementById(`box_${prefix}_${slot}`);
+            if (container) {
+              if (database && database[storageKey]) {
+                container.innerHTML = `<img src="${database[storageKey]}" alt="Snapshot"><div class="view-overlay-indicator">🔍 View</div>`;
+              } else {
+                container.innerHTML = "📷";
+              }
+            }
+          });
+        }
+      }
+    });
+  }
+
+  function launchMetadataProfileModal(matricId) {
+    const s = COHORT_REGISTRY[matricId]; if (!s) return;
+    const overlay = document.createElement("div"); overlay.className = "profile-modal-overlay";
+    overlay.innerHTML = `
+      <div class="profile-modal-card">
+        <div class="profile-modal-header">🍄 MYCOLOGY PATHOLOGY DIRECTORY</div>
+        <div class="profile-modal-body">
+          <div style="font-size:11px; text-align:center; font-weight:bold; color:#64748b; margin-bottom:12px;">2026/2027 Academic Session<br>Supervisor: Prof O.A. Enikuomehin</div>
+          <div class="passport-frame"><span>Affix Passport<br>Photograph Here</span></div>
+          <table class="profile-table">
+            <tr><td class="label-col">Full Name:</td><td>${s.name}</td></tr>
+            <tr><td class="label-col">Matric No:</td><td>${matricId}</td></tr>
+            <tr><td class="label-col">Nickname:</td><td>${s.nickname || '[Pending]'}</td></tr>
+            <tr><td class="label-col">Email Address:</td><td>${s.email || '[Pending]'}</td></tr>
+            <tr><td class="label-col">Phone Number:</td><td>${s.phone || '[Pending]'}</td></tr>
+            <tr><td class="label-col">Hobby:</td><td>${s.hobby || '[Pending]'}</td></tr>
+          </table>
+          <button class="profile-modal-close-btn" onclick="this.closest('.profile-modal-overlay').remove()">Close Profile Document View</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
   }
 
   function renderAllWeeksHTML() {
@@ -887,9 +746,7 @@
     
     let masterHTML = "";
     let activeUserContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let currentActivePlots = (activeUserContext && activeUserContext.plots && activeUserContext.plots.length > 0) 
-      ? activeUserContext.plots 
-      : ["111", "203", "309", "114", "202", "310", "112", "204", "306"]; 
+    let currentActivePlots = (activeUserContext && activeUserContext.plots && activeUserContext.plots.length > 0) ? activeUserContext.plots : ["111", "203", "309", "114", "202", "310", "112", "204", "306"]; 
 
     let dynamicPlotMap = [
       { id: currentActivePlots[0] || "111", rep: "I", type: "control", code: activeUserContext?.plot_codes?.[0] || "T1: Control (Rep I)", desc: activeUserContext?.plot_descriptions?.[0] || "Untreated baseline matrix." },
@@ -916,19 +773,15 @@
 
       groups.forEach(group => {
         masterHTML += `<div class="treatment-section-header">${group.title} — Week ${week.num} (${week.date})</div>`;
-        
         group.plots.forEach(plot => {
           let flagClass = plot.type === "control" ? "context-flag-box control" : "context-flag-box";
-          
           masterHTML += `
             <div class="plot-card">
               <div class="plot-header">
                 <span>PLOT ${plot.id} [REP ${plot.rep}]</span>
                 <span style="font-size:11px; font-family:'Inter'; font-weight:700; color:${plot.type==='control'?'var(--alert-orange)':'var(--blue)'}; background:${plot.type==='control'?'var(--alert-bg)':'var(--blue-light)'}; padding:3px 8px; border-radius:3px; border:1px solid ${plot.type==='control'?'#ffcc80':'#b9cadb'};">${plot.code}</span>
               </div>
-              <div class="${flagClass}">
-                <strong>📋 Investigation Context:</strong> ${plot.desc}
-              </div>
+              <div class="${flagClass}"><strong>📋 Investigation Context:</strong> ${plot.desc}</div>
               <div class="table-container">
                 <table>
                   <thead>
@@ -942,8 +795,7 @@
                       <th style="width:12%;">Photo Joint (Dual Slots)</th>
                     </tr>
                   </thead>
-                  <tbody>
-          `;
+                  <tbody>`;
 
           [1, 2, 3].forEach(plantNum => {
             let uniquePrefix = `w${week.num}_${plot.id}_p${plantNum}`;
@@ -967,17 +819,16 @@
                 <td><input type="number" data-key="${storageKey}_sqc" class="field-input core-logger-input" placeholder="0"></td>
                 <td>
                   <div class="twin-slots-wrapper">
-                    <div class="img-joint" id="box_${uniquePrefix}_imgA" onclick="handleImageCellClick('${uniquePrefix}_imgA')" title="Specimen Slot A View">📷</div>
+                    <div class="img-joint" id="box_${uniquePrefix}_imgA" onclick="handleImageCellClick('${uniquePrefix}_imgA')">📷</div>
                     <input type="file" id="input_${uniquePrefix}_imgA_gallery" accept="image/*" class="photo-input-hidden" onchange="processIncomingPhoto('${uniquePrefix}_imgA', this)">
                     <input type="file" id="input_${uniquePrefix}_imgA_camera" accept="image/*" capture="camera" class="photo-input-hidden" onchange="processIncomingPhoto('${uniquePrefix}_imgA', this)">
 
-                    <div class="img-joint" id="box_${uniquePrefix}_imgB" onclick="handleImageCellClick('${uniquePrefix}_imgB')" title="Specimen Slot B View">📷</div>
+                    <div class="img-joint" id="box_${uniquePrefix}_imgB" onclick="handleImageCellClick('${uniquePrefix}_imgB')">📷</div>
                     <input type="file" id="input_${uniquePrefix}_imgB_gallery" accept="image/*" class="photo-input-hidden" onchange="processIncomingPhoto('${uniquePrefix}_imgB', this)">
                     <input type="file" id="input_${uniquePrefix}_imgB_camera" accept="image/*" capture="camera" class="photo-input-hidden" onchange="processIncomingPhoto('${uniquePrefix}_imgB', this)">
                   </div>
                 </td>
-              </tr>
-            `;
+              </tr>`;
           });
 
           let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
@@ -997,116 +848,17 @@
                 <label>Supervisor Review & Validation Comments</label>
                 <textarea data-key="${reviewKey}" class="comment-textarea core-logger-input" placeholder="Awaiting feedback..."></textarea>
               </div>
-            </div>
-          `;
+            </div>`;
         });
       });
-
       masterHTML += `</div>`;
     });
-
     mountPoint.innerHTML = masterHTML;
   }
 
   function bindInputListeners() {
     document.querySelectorAll(".core-logger-input").forEach(element => {
-      element.addEventListener("input", function() {
-        saveValueToCache(this.getAttribute("data-key"), this.value);
-      });
-    });
-  }
-
-  // ================================================================= -->
-  // ⚡ UPDATED: PURE LOCALSTORAGE REPOSITORY (NO EXTERNAL SYNC CALLS)
-  // ================================================================= -->
-  function saveValueToCache(key, value) {
-    let database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
-    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    
-    let isolatedKey = key.startsWith(userPrefix) ? key : userPrefix + key;
-    
-    database[isolatedKey] = value;
-    localStorage.setItem("castor_logger_data", JSON.stringify(database));
-    console.log(`Saved locally: ${isolatedKey}`);
-  }
-
-  function loadSavedValuesToDOM() {
-    const database = JSON.parse(localStorage.getItem("castor_logger_data"));
-    let isSupervisorMode = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "supervisor");
-    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    let isJosiah = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "josiah_");
-
-    document.querySelectorAll(".core-logger-input").forEach(element => {
-      const key = element.getAttribute("data-key");
-      let isolatedKey = key.startsWith(userPrefix) ? key : userPrefix + key;
-      
-      if (database && database[isolatedKey] !== undefined) {
-        element.value = database[isolatedKey];
-      } else {
-        element.value = "";
-      }
-
-      if (isSupervisorMode) {
-        if (!element.classList.contains("comment-textarea")) {
-          element.disabled = true;
-          element.style.backgroundColor = "#f4f1e6";
-          element.style.cursor = "not-allowed";
-        } else {
-          element.disabled = false;
-          element.style.backgroundColor = "#fff";
-          element.placeholder = "Type validation remarks here...";
-          element.oninput = function() {
-            saveValueToCache(this.getAttribute("data-key"), this.value);
-          };
-        }
-      } 
-      else if (isJosiah) {
-        if (AUDIT_TARGET_STUDENT && AUDIT_TARGET_STUDENT.prefix !== "josiah_") {
-          element.disabled = true;
-          element.style.backgroundColor = "#f4f1e6";
-          element.style.cursor = "not-allowed";
-        } else {
-          if (element.classList.contains("comment-textarea")) {
-            element.disabled = true;
-            element.style.backgroundColor = "#f4f1e6";
-          } else {
-            element.disabled = false;
-            element.style.backgroundColor = "#fff";
-          }
-        }
-      } 
-      else {
-        if (element.classList.contains("comment-textarea")) {
-          element.disabled = true;
-        } else {
-          element.disabled = false;
-          element.style.backgroundColor = "#fff";
-        }
-      }
-    });
-
-    let currentActivePlots = (activeContext && activeContext.plots) ? activeContext.plots : ["111", "203", "309", "114", "202", "310", "112", "204", "306"];
-    
-    currentActivePlots.forEach(plotId => {
-      for(let w=1; w<=6; w++) {
-        for(let p=1; p<=3; p++) {
-          let prefix = `w${w}_${plotId}_p${p}`;
-          ['imgA', 'imgB'].forEach(slot => {
-            let storageKey = `${userPrefix}${prefix}_${slot}_src`;
-            let container = document.getElementById(`box_${prefix}_${slot}`);
-            if (container) {
-              if (database && database[storageKey]) {
-                container.innerHTML = `<img src="${database[storageKey]}" alt="Snapshot"><div class="view-overlay-indicator">🔍 View</div>`;
-              } else {
-                container.innerHTML = "📷";
-              }
-              container.style.pointerEvents = "auto";
-            }
-          });
-        }
-      }
+      element.addEventListener("input", function() { saveValueToCache(this.getAttribute("data-key"), this.value); });
     });
   }
 
@@ -1114,33 +866,23 @@
     activePrefixKeyContext = storageKeyPrefix; 
     const database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
     let isSupervisorMode = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "supervisor");
-    
     let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
     let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
     const hasExistingImage = !!database[`${userPrefix}${storageKeyPrefix}_src`];
     
     document.getElementById("action-dialog-subtitle").innerText = `Target Slot: ${storageKeyPrefix.toUpperCase().replace(/_/g, " ")}`;
-    
-    const viewButton = document.getElementById("modal-btn-view");
-    if (viewButton) viewButton.disabled = !hasExistingImage;
+    document.getElementById("modal-btn-view").disabled = !hasExistingImage;
 
     let isJosiah = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "josiah_");
     let isViewingSomeoneElse = (AUDIT_TARGET_STUDENT && AUDIT_TARGET_STUDENT.prefix !== LOGGED_IN_USER.prefix);
     
-    const actionButtons = document.querySelectorAll(".field-dialog-overlay button:not(#modal-btn-view):not(.cancel)");
-    
-    actionButtons.forEach(btn => {
+    document.querySelectorAll(".field-dialog-overlay button:not(#modal-btn-view):not(.cancel)").forEach(btn => {
       if (isSupervisorMode || (isJosiah && isViewingSomeoneElse)) {
-        btn.disabled = true;
-        btn.style.opacity = "0.4";
-        btn.style.cursor = "not-allowed";
+        btn.disabled = true; btn.style.opacity = "0.4"; btn.style.cursor = "not-allowed";
       } else {
-        btn.disabled = false;
-        btn.style.opacity = "1";
-        btn.style.cursor = "pointer";
+        btn.disabled = false; btn.style.opacity = "1"; btn.style.cursor = "pointer";
       }
     });
-
     document.getElementById("action-dialog-overlay").style.display = "flex";
   }
 
@@ -1148,13 +890,10 @@
     closeActionDialog();
     let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
     let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    
     if (actionRoute === 'view') {
       const database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
       const imgData = database[`${userPrefix}${activePrefixKeyContext}_src`];
-      if (imgData) {
-        displayPhotoOverlay(imgData, `Pathology Profile: ${activePrefixKeyContext.toUpperCase().replace(/_/g, " ")}`);
-      }
+      if (imgData) displayPhotoOverlay(imgData, `Pathology Profile: ${activePrefixKeyContext.toUpperCase().replace(/_/g, " ")}`);
     } else if (actionRoute === 'snap') {
       document.getElementById(`input_${activePrefixKeyContext}_camera`).click();
     } else if (actionRoute === 'gallery') {
@@ -1162,49 +901,14 @@
     }
   }
 
-  function closeActionDialog() {
-    document.getElementById("action-dialog-overlay").style.display = "none";
-  }
-
-  async function processIncomingPhoto(storageKeyPrefix, inputElement) {
-    if (!inputElement.files || !inputElement.files[0]) return;
-    
-    const file = inputElement.files[0];
-    const targetBox = document.getElementById(`box_${storageKeyPrefix}`);
-    let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
-    let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
-    
-    if (targetBox) {
-      targetBox.innerHTML = `<span style="font-size:9px; font-weight:bold; color:var(--blue);">⏳ LOCAL PROCESSING...</span>`;
-    }
-
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = function(event) {
-      const permanentCloudUrl = event.target.result; // Fallback directly to base64 string for offline storage preview
-      
-      if (targetBox) {
-        targetBox.innerHTML = `<img src="${permanentCloudUrl}" alt="Evidence"><div class="view-overlay-indicator">🔍 View</div>`;
-      }
-
-      let database = JSON.parse(localStorage.getItem("castor_logger_data")) || {};
-      let isolatedKey = userPrefix + storageKeyPrefix + "_src";
-      
-      database[isolatedKey] = permanentCloudUrl;
-      localStorage.setItem("castor_logger_data", JSON.stringify(database));
-    };
-  }
-
+  function closeActionDialog() { document.getElementById("action-dialog-overlay").style.display = "none"; }
   function displayPhotoOverlay(imageURL, captionText) {
     document.getElementById('lightbox-target-image').src = imageURL;
     document.getElementById('lightbox-caption').innerText = captionText;
     document.getElementById('photo-lightbox-overlay').style.display = 'flex';
   }
-
-  function closePhotoOverlay() {
-    document.getElementById('photo-lightbox-overlay').style.display = 'none';
-  }
-
+  function closePhotoOverlay() { document.getElementById('photo-lightbox-overlay').style.display = 'none'; }
+  
   function changeWeekView(weekNumber) {
     document.querySelectorAll('.week-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.week-content').forEach(content => content.classList.remove('active'));
@@ -1212,6 +916,13 @@
     const targetContent = document.getElementById('week-' + weekNumber + '-content');
     if (targetContent) targetContent.classList.add('active');
   }
+
+  const week1Preload = {
+    "w1_111_p1_ctl": "5", "w1_111_p1_blc": "0", "w1_111_p1_slc": "2", "w1_111_p1_bll": "0.0", "w1_111_p1_blb": "0.0", "w1_111_p1_sqc": "5", "w1_111_p1_imgA_src": "https://i.postimg.cc/LsbCtnM3/IMG-20260714-WA0011.jpg",
+    "w1_111_p2_ctl": "6", "w1_111_p2_blc": "1", "w1_111_p2_slc": "2", "w1_111_p2_bll": "0.3", "w1_111_p2_blb": "0.6", "w1_111_p2_sqc": "5", "w1_111_p2_imgA_src": "https://i.postimg.cc/wvc465W6/IMG-20260714-WA0013.jpg",
+    "w1_111_p3_ctl": "5", "w1_111_p3_blc": "0", "w1_111_p3_slc": "0", "w1_111_p3_bll": "0.0", "w1_111_p3_blb": "0.0", "w1_111_p3_sqc": "0",
+    "w1_111_notes": "Plant 1: Displays active early leaf spot on 2 leaves. Plant 2: Exhibits mixed susceptibility profile with blight lesion measuring 0.3x0.6cm and leaf spots. Plant 3: Entirely clean."
+  };
 
   window.onload = initializeMatrixDatabase;
 </script>
