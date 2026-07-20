@@ -206,9 +206,16 @@
         <span>FIELD TRIAL LOCATION: TEACHING & RESEARCH FARM</span>
       </div>
       <div style="display: flex; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.3); margin-top: 12px; padding-top: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.95;">
-        <span><strong>Project Supervisor:</strong> Prof. O. A. Enikuomehin</span>
-        <span><strong>Field Researcher:</strong> <span id="dynamic-user-name-display">O. E. Josiah (Matric No: 20224193)</span></span>
-      </div>
+  <span><strong>Project Supervisor:</strong> Prof. O. A. Enikuomehin</span>
+  <span style="display: flex; flex-direction: column; align-items: flex-end;">
+    <span><strong>Field Researcher:</strong> <span id="dynamic-user-name-display">O. E. Josiah (Matric No: 20224193)</span></span>
+    
+    <!-- 🔑 UNIVERSAL PASSWORD BUTTON -->
+<button onclick="openPasswordCustomizationPanel(LOGGED_IN_USER.prefix === 'supervisor' ? 'supervisor' : Object.keys(COHORT_REGISTRY).find(k => COHORT_REGISTRY[k].prefix === LOGGED_IN_USER.prefix))" style="background: var(--blue); color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; text-transform: uppercase; margin-top: 5px;">
+  ⚙️ Change Portal Password
+</button>
+  </span>
+</div>
     </div>
 
     <div class="global-actions-bar">
@@ -764,24 +771,37 @@
     document.body.appendChild(overlay);
   }
 async function openPasswordCustomizationPanel(matricId) {
-    const s = COHORT_REGISTRY[matricId];
-    if (!s) return;
+    let targetEmail = "";
     
-    // Safety check: A student cannot change someone else's credentials
-    if (LOGGED_IN_USER.prefix !== "supervisor" && LOGGED_IN_USER.prefix !== s.prefix) {
-      alert("Access Denied: You are not authorized to update credentials logs parameters for this candidate slot.");
-      return;
+    // 1. Identify if the current user is the supervisor or a student
+    if (matricId === "supervisor") {
+      if (LOGGED_IN_USER.prefix !== "supervisor") {
+        alert("Access Denied: You are not authorized to update supervisor credentials.");
+        return;
+      }
+      targetEmail = "enikuomehin@funaab.edu.ng";
+    } else {
+      const s = COHORT_REGISTRY[matricId];
+      if (!s) return;
+      
+      // Safety check: A student cannot change someone else's credentials
+      if (LOGGED_IN_USER.prefix !== s.prefix) {
+        alert("Access Denied: You are not authorized to update credentials logs parameters for this candidate slot.");
+        return;
+      }
+      
+      // 🧙‍♂️ THE FIX: Force the system to use the same Matric-style email format used in your database
+      targetEmail = `${matricId}@student.funaab.edu.ng`;
     }
 
-    const currentVerify = prompt("Verification Step:\nPlease input the CURRENT active access security authorization password:");
-    if (currentVerify !== s.pass) {
-      alert("⚠️ Verification Error: Input password does not match registry database records index code.");
-      return;
-    }
+    // 2. Prompt for current verification
+    const currentVerify = prompt("Verification Step:\nPlease input your CURRENT password to verify ownership:");
+    if (!currentVerify) return;
 
-    const newPass1 = prompt("Success Verified.\nPlease input your NEW security authorization password:");
-    if (!newPass1 || newPass1.trim().length < 4) {
-      alert("⚠️ Security Protocol Fault: Password field entries must contain at least 4 text characters.");
+    // 3. Prompt for the new password
+    const newPass1 = prompt("Success Verified.\nPlease input your NEW secure password:");
+    if (!newPass1 || newPass1.trim().length < 6) {
+      alert("⚠️ Security Protocol Fault: Password entries must contain at least 6 characters for cloud validation.");
       return;
     }
 
@@ -792,24 +812,29 @@ async function openPasswordCustomizationPanel(matricId) {
     }
 
     try {
-      // 🔒 SECURE INSTANT SYNC: Stream the credential update directly up to Supabase
-      const { error } = await _supabase
-        .from('cohort_credential_sync')
-        .upsert({
-          matric_number: matricId,
-          custom_password: newPass1.trim(),
-          updated_at: new Date().toISOString()
-        });
+      // 4. Gatekeeper Step: Verify identity via Supabase Auth check
+      const { error: verifyError } = await _supabase.auth.signInWithPassword({
+        email: targetEmail,
+        password: currentVerify.trim()
+      });
 
-      if (error) throw error;
+      if (verifyError) {
+        alert("⚠️ Verification Error: Current password entry is incorrect. Updates rejected.");
+        return;
+      }
 
-      // Commit update to live memory state safely
-      s.pass = newPass1.trim();
-      alert(`🔑 Password locked securely in cloud storage! Student account registration for Matric: ${matricId} will now use this updated authorization key persistently across all devices.`);
+      // 5. Native Secure Update Step: Save the new hashed password directly to Supabase Auth
+      const { error: updateError } = await _supabase.auth.updateUser({
+        password: newPass1.trim()
+      });
+
+      if (updateError) throw updateError;
+
+      alert(`🔑 Password updated.`);
       
     } catch (err) {
       console.error("Credentials Cloud Sync System Fault:", err);
-      alert("⚠️ Cloud Connection Drop: Failed to lock password into database repository. Please check internet connection values and retry.");
+      alert("⚠️ Failed to update password please try again in a stable network environment: " + err.message);
     }
   }
 
@@ -831,67 +856,58 @@ async function openPasswordCustomizationPanel(matricId) {
       return;
     }
 
-    // Check if user exists in registration configurations directory dictionary array
+    // B. Secure Native Student Log-In
     if (COHORT_REGISTRY[userInput]) {
-      let targetPassword = COHORT_REGISTRY[userInput].pass;
-
       try {
-        // 🔍 DATABASE LOOKUP: Scan table records for any modified custom user passwords
-        const { data, error } = await _supabase
-          .from('cohort_credential_sync')
-          .select('custom_password')
-          .eq('matric_number', userInput)
-          .maybeSingle();
-
-        if (!error && data && data.custom_password) {
-          // If a student modified their credentials previously, re-align token mapping values
-          targetPassword = data.custom_password;
-          COHORT_REGISTRY[userInput].pass = data.custom_password;
-        }
-      } catch (dbErr) {
-        console.warn("Non-fatal credential database verification lookup skip:", dbErr);
-      }
-
-      // B. Dynamic Persistent Workspace Authorization
-      if (passInput === targetPassword) {
-        LOGGED_IN_USER = COHORT_REGISTRY[userInput];
-        AUDIT_TARGET_STUDENT = null; 
+        // 🧙‍♂️ THE TRICK: Automatically turn their Matric Number into their official system email
+        const studentEmail = `${userInput}@student.funaab.edu.ng`;
         
-        document.getElementById('dynamic-user-name-display').innerText = `${LOGGED_IN_USER.name} (Matric: ${userInput})`;
+        const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({
+          email: studentEmail,
+          password: passInput
+        });
 
-        // 🪐 BRIDGE ADDITION: Fetch dynamic table entries down from Supabase on Login view triggers
-        try {
-          const { data: cloudBackup, error: pullErr } = await _supabase
-            .from('cohort_field_sync')
-            .select('full_payload')
-            .eq('matric_number', userInput)
-            .maybeSingle();
+        if (!authError) {
+          LOGGED_IN_USER = COHORT_REGISTRY[userInput];
+          AUDIT_TARGET_STUDENT = null; 
+          
+          document.getElementById('dynamic-user-name-display').innerText = `${LOGGED_IN_USER.name} (Matric: ${userInput})`;
 
-          if (!pullErr && cloudBackup && cloudBackup.full_payload) {
-            localStorage.setItem("castor_logger_data", JSON.stringify(cloudBackup.full_payload));
+          // Fetch dynamic data payload backup from Supabase
+          try {
+            const { data: cloudBackup, error: pullErr } = await _supabase
+              .from('cohort_field_sync')
+              .select('full_payload')
+              .eq('matric_number', userInput)
+              .maybeSingle();
+
+            if (!pullErr && cloudBackup && cloudBackup.full_payload) {
+              localStorage.setItem("castor_logger_data", JSON.stringify(cloudBackup.full_payload));
+            }
+          } catch(e) { console.warn("Cloud payload download skipped:", e); }
+          
+          if (userInput === "20224193") {
+            alert("Welcome Admin Explorer Mode:ASHJOE.");
+            renderAllWeeksHTML();
+            bindInputListeners();
+            loadSavedValuesToDOM();
+            renderCohortSidebarDirectory(); 
+            document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
+          } else {
+            const backArrow = document.getElementById("back-navigation-arrow-id");
+            if (backArrow) backArrow.style.display = "none";
+            
+            renderAllWeeksHTML();
+            bindInputListeners();
+            loadSavedValuesToDOM();
+            
+            document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
+            openJosiahPortal(); 
           }
-        } catch(e) { console.warn("Cloud payload download skipped:", e); }
-        
-        if (userInput === "20224193") {
-          alert("Welcome Admin Explorer Mode: O.E. Josiah. You can now tap student rows to view their details or records.");
-          // Render layout with cloud context drawn instantly
-          renderAllWeeksHTML();
-          bindInputListeners();
-          loadSavedValuesToDOM();
-          renderCohortSidebarDirectory(); 
-          document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
-        } else {
-          const backArrow = document.getElementById("back-navigation-arrow-id");
-          if (backArrow) backArrow.style.display = "none";
-          
-          renderAllWeeksHTML();
-          bindInputListeners();
-          loadSavedValuesToDOM();
-          
-          document.getElementById('hub-auth-gatekeeper').style.display = 'none'; 
-          openJosiahPortal(); 
+          return;
         }
-        return;
+      } catch (authFault) {
+        console.error("Native Auth Pipeline Error:", authFault);
       }
     }
 
