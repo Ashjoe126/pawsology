@@ -92,6 +92,21 @@
   .notes-block { background: #fdfbf7; border: 1px solid var(--border); padding: 15px; border-radius: 4px; font-size: 13px; margin-top: 15px; line-height: 1.5; }
   .notes-title { font-weight: bold; color: var(--green); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; border-bottom: 1px solid var(--green); padding-bottom: 2px; display: inline-block; }
   .notes-textarea { width: 100%; min-height: 80px; font-family: inherit; font-size: 12px; padding: 8px; border: 1px solid var(--border); border-radius: 4px; background: #fafafa; box-sizing: border-box; resize: vertical; }
+.ai-gen-btn { 
+    background: #0d3b6e; 
+    color: white; 
+    border: none; 
+    padding: 4px 8px; 
+    border-radius: 4px; 
+    font-size: 10px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    gap: 4px; 
+    text-transform: uppercase; 
+  }
+  .ai-gen-btn:hover { background: #1a5c2a; }
 
   .comment-section { background: #ffffff; border: 1px solid var(--border); padding: 12px; border-radius: 4px; font-size: 12px; margin-top: 15px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
   .comment-section label { font-weight: 700; color: var(--blue); display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -274,6 +289,31 @@
     </button>
   </div>
 </div>
+<div id="ai-options-dialog-overlay" class="field-dialog-overlay" style="display: none;">
+  <div class="field-dialog-card">
+    <h4 class="field-dialog-title">🤖 AI Note Assistant Options</h4>
+    <p style="font-size:11px; color:#666; margin-top:0;">Select generation style or add custom observation:</p>
+    
+    <button class="field-dialog-btn" onclick="runAIGenerationMode('concise')">
+      <span class="icon">⚡</span> <span class="label-txt">Longitudinal Progression Note (Recommended)</span>
+    </button>
+    
+    <button class="field-dialog-btn" onclick="runAIGenerationMode('academic')">
+      <span class="icon">🔬</span> <span class="label-txt">Deep Academic Formal Profile</span>
+    </button>
+
+    <div style="margin-top:10px; text-align:left;">
+      <label style="font-size:10px; font-weight:bold; color:var(--blue);">✍️ Retweak with Personal Field Observation (Optional):</label>
+      <input type="text" id="ai-custom-input" placeholder="e.g. Tagged leaf dropped on Plant 2 due to rot..." style="width:100%; padding:6px; font-size:11px; margin-top:4px; border:1px solid var(--border); border-radius:4px; box-sizing:border-box;">
+    </div>
+    
+    <button class="field-dialog-btn" style="background:var(--blue); color:white; justify-content:center; text-align:center; margin-top:12px;" onclick="runAIGenerationMode('custom')">
+      ✨ Generate with My Custom Note Included
+    </button>
+    
+    <button class="field-dialog-btn cancel" onclick="closeAIOptionsDialog()">Cancel</button>
+  </div>
+</div>
 
 <script>
   // ================================================================= -->
@@ -285,6 +325,8 @@
   const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let activePrefixKeyContext = "";
   let AUDIT_TARGET_STUDENT = null;
+  let activeAIWeekContext = null;
+  let activeAIPlotContext = null;
 
   // ================================================================= -->
   // 👥 COHORT SECURE REGISTRY DIRECTORY & ALLOCATED METADATA SLOTS
@@ -546,29 +588,38 @@
       name: "L. Joseph", 
       pass: "louis192", 
       prefix: "louis_", 
-      treatments: "Mycology (Not Assigned!!)",
-      plots: ["141", "241", "341", "142", "242", "342", "143", "243", "343"], 
-      labels: ["Control (141)", "Control (241)", "Control (341)", "Pending (142)", "Pending (242)", "Pending (342)", "Pending (143)", "Pending (243)", "Pending (343)"],
-      group2_title: "Vascular Specialist Profile Block Area A",
-      group3_title: "Vascular Specialist Profile Block Area B",
+      treatments: "Mycology (V1: T1, T4, T5)",
+      plots: ["104", "209", "313", "101", "208", "315", "102", "210", "310"], 
+      labels: ["T1 Control (104)", "T1 Control (209)", "T1 Control (313)", "T4 2X (101)", "T4 2X (208)", "T4 2X (315)", "T5 3X (102)", "T5 3X (210)", "T5 3X (310)"],
+      group2_title: "Experimental Group II: Foliar Fertilizer Standard Double Strength (T4)",
+      group3_title: "Experimental Group III: Foliar Fertilizer Maximized Triple Strength (T5)",
       plot_codes: [
         "T1: Control (Rep I)", "T1: Control (Rep II)", "T1: Control (Rep III)",
-        "Vascular Target A",   "Vascular Target B",   "Vascular Target C",
-        "Pending Slot I",      "Pending Slot II",     "Pending Slot III"
+        "T4: 2X Dose (Rep I)",  "T4: 2X Dose (Rep II)",  "T4: 2X Dose (Rep III)",
+        "T5: 3X Dose (Rep I)",  "T5: 3X Dose (Rep II)",  "T5: 3X Dose (Rep III)"
       ],
       plot_descriptions: [
-        "Vascular structural untreated base check block inside Replication I.",
-        "Vascular structural untreated base check block inside Replication II.",
-        "Vascular structural untreated base check block inside Replication III.",
-        "Vascular diagnostic section mapping parameters. Profile active.",
-        "Vascular diagnostic section mapping parameters. Profile active.",
-        "Vascular diagnostic section mapping parameters. Profile active.",
-        "Roster metrics layout space left blank for expansion requirements.",
-        "Roster metrics layout space left blank for expansion requirements.",
-        "Roster metrics layout space left blank for expansion requirements."
+        "Untreated reference standard block within Replication I canopy matrix array.",
+        "Central untreated reference standard block inside Replication II microclimate array.",
+        "Final untreated reference standard block position within Replication III array border.",
+        "Treated under high-gradient compound concentration (2X Dose). Rep I validation block.",
+        "Treated under high-gradient compound concentration (2X Dose). Rep II tracking array.",
+        "Treated under high-gradient compound concentration (2X Dose). Rep III perimeter bank layout.",
+        "Treated with Foliar Fertilizer (3X Dose). Rep I evaluation block.",
+        "Treated under Foliar Fertilizer (3X Dose). Rep II monitoring array.",
+        "Treated Foliar Fertilizer (3X Dose). Rep III monitoring check layout."
       ],
-      session: "2026/2027 Academic Session", supervisor: "Prof O.A. Enikuomehin", passport_url: "https://via.placeholder.com/120x140?text=Passport",
-      nickname: "[Nickname]", email: "louis.l@student.funaab.edu.ng", phone: "[Pending]", hobby: "[Pending]", address: "[Pending]", state_of_origin: "[Pending]", lga: "[Pending]", date_created: "July 19, 2026"
+      session: "2026/2027 Academic Session", 
+      supervisor: "Prof O.A. Enikuomehin", 
+      passport_url: "https://via.placeholder.com/120x140?text=Passport",
+      nickname: "[Nickname]", 
+      email: "louis.l@student.funaab.edu.ng", 
+      phone: "[Pending]", 
+      hobby: "[Pending]", 
+      address: "[Pending]", 
+      state_of_origin: "[Pending]", 
+      lga: "[Pending]", 
+      date_created: "July 19, 2026"
     }, 
     "20224196": { 
       name: "O. G. Martin", 
@@ -1145,13 +1196,22 @@ async function openPasswordCustomizationPanel(matricId) {
           let notesKey = `${namespacePrefix}w${week.num}_${plot.id}_notes`;
           let reviewKey = `${namespacePrefix}w${week.num}_${plot.id}_reviews`;
 
+          /* --- SUPERVISOR HIDE LOGIC FOR AI BUTTON --- */
+          let isSupervisorMode = (LOGGED_IN_USER && LOGGED_IN_USER.prefix === "supervisor");
+          let aiButtonHTML = !isSupervisorMode 
+            ? `<button type="button" class="ai-gen-btn" onclick="openAIOptionsDialog('${week.num}', '${plot.id}')">🤖 AI Bot Options & Retweak</button>` 
+            : ``;
+
           masterHTML += `
                   </tbody>
                 </table>
               </div>
               <div class="notes-block">
-                <div class="notes-title">📝 Field Pathology Phenotype Notes</div>
-                <textarea data-key="${notesKey}" class="notes-textarea core-logger-input" placeholder="Describe micro-symptom variants, yellowing, tissue drops, or unexpected pathogen developments here..."></textarea>
+                <div class="notes-title" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>📝 Field Pathology Phenotype Notes</span>
+                  ${aiButtonHTML}
+                </div>
+                <textarea id="${notesKey}" data-key="${notesKey}" class="notes-textarea core-logger-input" placeholder="Describe micro-symptom variants, yellowing, tissue drops, or unexpected pathogen developments here..."></textarea>
               </div>
               <div class="comment-section">
                 <label>Supervisor Review & Validation Comments</label>
@@ -1369,6 +1429,109 @@ async function openPasswordCustomizationPanel(matricId) {
   function closeActionDialog() {
     document.getElementById("action-dialog-overlay").style.display = "none";
   }
+/* --- LONGITUDINAL COMPARISON AI ENGINE --- */
+function openAIOptionsDialog(weekNum, plotId) {
+  activeAIWeekContext = weekNum;
+  activeAIPlotContext = plotId;
+  document.getElementById("ai-custom-input").value = "";
+  document.getElementById("ai-options-dialog-overlay").style.display = "flex";
+}
+
+function closeAIOptionsDialog() {
+  document.getElementById("ai-options-dialog-overlay").style.display = "none";
+}
+
+function runAIGenerationMode(mode) {
+  closeAIOptionsDialog();
+  let weekNum = parseInt(activeAIWeekContext);
+  let plotId = activeAIPlotContext;
+  let customObservation = document.getElementById("ai-custom-input").value.trim();
+  let noteLines = [];
+
+  let activeContext = AUDIT_TARGET_STUDENT ? AUDIT_TARGET_STUDENT : LOGGED_IN_USER;
+  let userPrefix = activeContext ? activeContext.prefix : "anonymous_";
+
+  [1, 2, 3].forEach(p => {
+    // Current Week Inputs
+    let currPrefix = `${userPrefix}w${weekNum}_${plotId}_p${p}`;
+    let c_blightL = document.querySelector(`[data-key="${currPrefix}_bll"]`)?.value || "0.0";
+    let c_blightB = document.querySelector(`[data-key="${currPrefix}_blb"]`)?.value || "0.0";
+    let c_spotTally = document.querySelector(`[data-key="${currPrefix}_sqc"]`)?.value || "0";
+    
+    let hasCurrBlight = parseFloat(c_blightL) > 0 || parseFloat(c_blightB) > 0;
+    let hasCurrSpot = parseInt(c_spotTally) > 0;
+
+    let plantSentence = `Plant ${p}: `;
+
+    // Baseline Week 1 check
+    if (weekNum === 1) {
+      if (hasCurrBlight && hasCurrSpot) {
+        plantSentence += `Displays mixed susceptibility baseline. Blight patch measures ${c_blightL} x ${c_blightB} cm, alongside Cercospora spot tally of ${c_spotTally} spots in the quadrant grid.`;
+      } else if (hasCurrBlight) {
+        plantSentence += `Baseline Alternaria blight active (${c_blightL} x ${c_blightB} cm lesion profile). Leaf margins intact with zero Cercospora leaf spot.`;
+      } else if (hasCurrSpot) {
+        plantSentence += `Baseline Cercospora spot density recorded at ${c_spotTally} spots in the target quadrant area. Zero Alternaria blight observed.`;
+      } else {
+        plantSentence += `Remains entirely clean, healthy, and asymptomatic, establishing a clean baseline lifecycle check across all disease parameters.`;
+      }
+    } 
+    // Week 2 to Week 6 Comparison Check against Previous Week
+    else {
+      let prevWeekNum = weekNum - 1;
+      let prevPrefix = `${userPrefix}w${prevWeekNum}_${plotId}_p${p}`;
+      let p_blightL = document.querySelector(`[data-key="${prevPrefix}_bll"]`)?.value || "0.0";
+      let p_blightB = document.querySelector(`[data-key="${prevPrefix}_blb"]`)?.value || "0.0";
+      let p_spotTally = document.querySelector(`[data-key="${prevPrefix}_sqc"]`)?.value || "0";
+
+      let hasPrevBlight = parseFloat(p_blightL) > 0 || parseFloat(p_blightB) > 0;
+      let hasPrevSpot = parseInt(p_spotTally) > 0;
+
+      // Case A: Dual Infection Today
+      if (hasCurrBlight && hasCurrSpot) {
+        if (!hasPrevBlight && !hasPrevSpot) {
+          plantSentence += `Dual-disease onset recorded this week. New blight lesion (${c_blightL} x ${c_blightB} cm) and ${c_spotTally} spots established from a clean Week ${prevWeekNum} baseline.`;
+        } else if (hasPrevBlight && !hasPrevSpot) {
+          plantSentence += `Co-infection active. Blight expanded from ${p_blightL} x ${p_blightB} cm (Week ${prevWeekNum}) to ${c_blightL} x ${c_blightB} cm, with new Cercospora spots (${c_spotTally} spots) developing this week.`;
+        } else {
+          plantSentence += `Co-infection active. Blight lesion profile measuring ${c_blightL} x ${c_blightB} cm, while spot density progressed from ${p_spotTally} to ${c_spotTally} spots in the target quadrant.`;
+        }
+      }
+      // Case B: Blight Only Today
+      else if (hasCurrBlight) {
+        if (!hasPrevBlight) {
+          plantSentence += `New Alternaria blight onset (${c_blightL} x ${c_blightB} cm). Plant was clean of blight in Week ${prevWeekNum}. Zero leaf spots.`;
+        } else {
+          plantSentence += `Blight lesion expanded from ${p_blightL} x ${p_blightB} cm (Week ${prevWeekNum}) to ${c_blightL} x ${c_blightB} cm today. Leaf margins remain clear of leaf spots.`;
+        }
+      }
+      // Case C: Leaf Spot Only Today
+      else if (hasCurrSpot) {
+        if (!hasPrevSpot) {
+          plantSentence += `New Cercospora spot onset (${c_spotTally} spots in quadrant). No spots were present in Week ${prevWeekNum}. Zero blight.`;
+        } else {
+          plantSentence += `Cercospora spot density increased from ${p_spotTally} spots (Week ${prevWeekNum}) to ${c_spotTally} spots in the target quadrant. Zero blight observed.`;
+        }
+      }
+      // Case D: Completely Clean
+      else {
+        plantSentence += `Maintains a clean, healthy canopy. Zero symptoms observed across all foliar pathogen checks for 2 consecutive weeks.`;
+      }
+    }
+
+    noteLines.push(plantSentence);
+  });
+
+  if (customObservation !== "") {
+    noteLines.push(`📝 Field Researcher Remark: ${customObservation}`);
+  }
+
+  let finalNoteText = noteLines.join("\n\n");
+  let targetNoteBox = document.querySelector(`[data-key="${userPrefix}w${weekNum}_${plotId}_notes"]`);
+  if (targetNoteBox) {
+    targetNoteBox.value = finalNoteText;
+    saveValueToCache(`w${weekNum}_${plotId}_notes`, finalNoteText);
+  }
+}
 
   async function processIncomingPhoto(storageKeyPrefix, inputElement) {
     if (!inputElement.files || !inputElement.files[0]) return;
